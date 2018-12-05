@@ -1,4 +1,4 @@
-from moz_sql_parser import parse
+import moz_sql_parser as msp
  
 # Function to print reverse level order traversal
 def reverseLevelOrder(root): 
@@ -157,25 +157,25 @@ def getFunction(op,params):
             raise ValueError("Function did not have the correct parameter number.") 
     else:
         raise ValueError("Function type not supported.") 
-        
+  
+if __name__ == "__main__":
+    obj = msp.parse("select a, CONCAT('a','b','c') from jobs WHERE a > 5 AND (-b) < 3 OR c IN('abc',3,'def')")
 
-obj = parse("select a, CONCAT('a','b','c') from jobs WHERE a > 5 AND (-b) < 3 OR c IN('abc',3,'def')")
+    print("Select Columns: {}".format(obj['select']))
+    print("Where Condition: {}".format(obj['where']))
 
-print("Select Columns: {}".format(obj['select']))
-print("Where Condition: {}".format(obj['where']))
+    print("Total tree height: {}".format(height(obj['where'])))
 
-print("Total tree height: {}".format(height(obj['where'])))
+    cols = list(map(getCppCode, obj['select']))
 
-cols = list(map(getCppCode, obj['select']))
+    filter = getCppCode(obj['where'])
 
-filter = getCppCode(obj['where'])
+    print("C++ filter:")
+    print("if ( {} )".format(filter))
 
-print("C++ filter:")
-print("if ( {} )".format(filter))
-
-print("C++ columns")
-colcount = 0
-for col in cols:
-    print("col{} = {};".format(colcount,col))
-    colcount += 1
-#reverseLevelOrder(obj['where'])
+    print("C++ columns")
+    colcount = 0
+    for col in cols:
+        print("col{} = {};".format(colcount,col))
+        colcount += 1
+    #reverseLevelOrder(obj['where'])
