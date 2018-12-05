@@ -1,0 +1,6 @@
+moz-sql-parser
+typed-ast
+pandas
+pyarrow
+numpy
+astunparse

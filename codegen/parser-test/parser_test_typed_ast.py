@@ -1,65 +1,38 @@
 import moz_sql_parser as msp
 
-# Function to print reverse level order traversal
-def reverseLevelOrder(root): 
-    h = height(root) 
-    for i in reversed(range(1, h + 1)): 
-        print(root)
+import pyarrow as pa
 
-def printNode(node):
-    if isinstance(node, dict):
-        print(node)
-    elif isinstance(node, list):
-        print(node)
-    else:
-        print(node)
+import ast
 
-# Compute the height of a tree-- the number of
-# nodes along the longest path from the root node
-# down to the farthest leaf node
-def height(node): 
-    if node is None: 
-        return 0 
-    else:   
-        if isinstance(node, dict): # All dicts are ops.
-            maxheight = 0
-            for key in node.keys():
-                tmpheight = height(node.get(key,None))
-                if tmpheight > maxheight:
-                    maxheight = tmpheight
-  
-            return maxheight + 1
-        elif isinstance(node, list): # Lists are parameters
-            maxheight = 0
-            for key in node:
-                tmpheight = height(key)
-                if tmpheight > maxheight:
-                    maxheight = tmpheight
-  
-            return maxheight
-        else:
-            return 1
+import astunparse
+
+boolops = {
+    'and': ast.And,
+    'or': ast.Or,
+}
 
 binops = {
-    'and':"AND",
-    'or':"OR",
-    'lt':"<",
-    'lte':">=",
-    'gt':">",
-    'gte':">=",
-    'eq':"==",
-    'neq':"!=",
-    'is':"==",
-    'mul':"*",
-    'div':"/",
-    'add':"+",
-    'sub':"!"
+    'mul':ast.Mult,
+    'div':ast.Div,
+    'add':ast.Add,
+    'sub':ast.Sub,
     }
 
-unops = {'not':"!",
-          'neg':"-"}
+compops = {
+    'lt':ast.Lt,
+    'lte':ast.LtE,
+    'gt':ast.Gt,
+    'gte':ast.GtE,
+    'eq':ast.Eq,
+    'neq':ast.NotEq,
+    'is':ast.Is,
+    }
 
-literals = {'literal':"'",
+unops = {'not':ast.Not,
+          'neg':ast.USub,
+         }
+
+literals = {'literal':ast.Str,
             'value':""}
 
 functions = {
@@ -91,12 +64,24 @@ def getCppCode(node):
             if len(node.keys()) == 1 or 'name' in node.keys():
                 op = list(node.keys())[0]
                 params = node[op]
+                if op in boolops and isinstance(params, list):
+                    if len(params) == 2:
+                        print("Processing BoolOp {} with parameters a: {} and b: {}".format(op,params[0],params[1]))
+                        return getBoolOp(op,params[0],params[1])
+                    else:
+                        raise ValueError("BinOp did not have the correct number of parameters.")
                 if op in binops and isinstance(params, list):
                     if len(params) == 2:
                         print("Processing BinOp {} with parameters a: {} and b: {}".format(op,params[0],params[1]))
                         return getBinOp(op,params[0],params[1])
                     else:
-                        raise ValueError("BinOp did not have the correct number of parameters.") 
+                        raise ValueError("BinOp did not have the correct number of parameters.")
+                if op in compops and isinstance(params, list):
+                    if len(params) == 2:
+                        print("Processing CompOp {} with parameters a: {} and b: {}".format(op,params[0],params[1]))
+                        return getCompOp(op,params[0],params[1])
+                    else:
+                        raise ValueError("BinOp did not have the correct number of parameters.")
                 elif op in unops:
                     if len(params) == 1:
                         print("Processing UnOp {} with parameter: {}".format(op,params))
@@ -124,26 +109,41 @@ def getCppCode(node):
         elif isinstance(node, list): # Lists are parameters
             print("Processing parameter list with params: {}".format(node))
             tmp = list(map(getCppCode,node))
-            return ", ".join(tmp)
+            return tmp
         else:
-            return str(node)
+            if isinstance(node,int):
+                return ast.Num(node)
+            else:
+                return ast.Name(node,ast.Load())
+
+def getBoolOp(op,a,b):
+    if op in boolops:
+        return ast.BoolOp(boolops[op](),[getCppCode(a),getCppCode(b)])
+    else:
+        raise ValueError("BoolOp type not supported.")
 
 def getBinOp(op,a,b):
     if op in binops:
-        return "({1} {0} {2})".format(binops[op],getCppCode(a),getCppCode(b))
+        return ast.BinOp(getCppCode(a),binops[op](),getCppCode(b))
     else:
-        raise ValueError("BinOp type not supported.") 
+        raise ValueError("BinOp type not supported.")
+
+def getCompOp(op,a,b):
+    if op in compops:
+        return ast.Compare(getCppCode(a),[compops[op]()],[getCppCode(b)])
+    else:
+        raise ValueError("CompOp type not supported.")
 
 def getUnOp(op,a):
     if op in unops:
-        return "({0}{1})".format(unops[op],getCppCode(a))
+        return ast.UnaryOp(unops[op](),getCppCode(a))
     else:
         raise ValueError("UnOp type not supported.") 
 
 def getLiteralOp(op,content):
     if op in literals:
         if isinstance(content, str):
-            return "{0}{1}{0}".format(literals[op],getCppCode(content))
+            return ast.Str(content)
         else:
             return getCppCode(content)
     else:
@@ -154,8 +154,7 @@ def getFunction(op,params):
         func = functions[op]
         if len(params) == func['params'] or (func['nargs'] and len(params) >= func['params']) or \
         ('literal' in params and len(params) == 1 and (len(params['literal']) == func['params'] or (func['nargs'] and len(params['literal']) >= func['params']))):
-                        
-            return "{0}({1})".format(functions[op]['name'],getCppCode(params))
+            return ast.Call(ast.Name(functions[op]['name'],ast.Load()),getCppCode(params),[])
         else:
             raise ValueError("Function did not have the correct parameter number.") 
     else:
@@ -163,23 +162,33 @@ def getFunction(op,params):
   
 if __name__ == "__main__":
 
-    obj = msp.parse("select a, CONCAT('a','b','c') as concat from jobs WHERE a > 5 AND (-b) < 3 OR c IN('abc',3,'def')")
+    schema = pa.read_schema("../schema-test/schema.fbs")
+
+    for col in schema:
+        print("Field: {}, type: {}, nullable: {}".format(col.name,col.type,col.nullable))
+
+    obj = msp.parse("select a, CONCAT('a','b','c') as concat from jobs WHERE a > 5 AND (-b) < 3")
 
     print("Select Columns: {}".format(obj['select']))
     print("Where Condition: {}".format(obj['where']))
 
-    print("Total tree height: {}".format(height(obj['where'])))
+    #print("Total tree height: {}".format(height(obj['where'])))
 
     cols = list(map(getCppCode, obj['select']))
 
+
     filter = getCppCode(obj['where'])
 
+    filter = ast.If(filter,[ast.Pass()],[ast.Pass()])
+    test_filt = ast.parse("if a > 5 and (-b) < 3:\n  pass\nelse:\n  pass","local")
+
+    print(astunparse.dump(test_filt.body[0]))
     print("C++ filter:")
-    print("if ( {} )".format(filter))
+    print(astunparse.dump(filter))
 
     print("C++ columns")
     colcount = 0
     for col in cols:
-        print("col{} = {};".format(colcount,col))
+        print("col{} = {};".format(colcount,astunparse.dump(col)))
         colcount += 1
     #reverseLevelOrder(obj['where'])
