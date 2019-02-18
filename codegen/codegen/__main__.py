@@ -1,4 +1,3 @@
-
 from .compiler import Compiler
 
 import os
@@ -10,12 +9,15 @@ if __name__ == "__main__":
     import argparse
     import pyarrow as pa
 
-    parser = argparse.ArgumentParser(prog="python3 -m codegen", description='Compile SQL statements into HLS C++ files.')
-    parser.add_argument('-i', '--input-schema', dest='input_schema', help='The input schema flatbuffer file.', default='in_schema.fbs')
-    parser.add_argument('-o', '--output-schema', dest='output_schema', help='The output schema flatbuffer file.', default='out_schema.fbs')
+    parser = argparse.ArgumentParser(prog="python3 -m codegen",
+                                     description='Compile SQL statements into HLS C++ files.')
+    parser.add_argument('-i', '--input-schema', dest='input_schema', help='The input schema flatbuffer file.',
+                        default='in_schema.fbs')
+    parser.add_argument('-o', '--output-schema', dest='output_schema', help='The output schema flatbuffer file.',
+                        default='out_schema.fbs')
     parser.add_argument('query_str', help='The query string to be compiled.', metavar='query-string')
     parser.add_argument('--query-name', help='The query name for both the file and the function.', default='query')
-    parser.add_argument('--output-dir', help='The output directory.', default='../../codegen-cpp/')
+    parser.add_argument('--output-dir', help='The output directory.', default='.')
 
     args = parser.parse_args()
 
@@ -43,8 +45,7 @@ if __name__ == "__main__":
 
     compiler = Compiler(in_schema, out_schema)
 
-    if len(args.query_str)<len("SELECT *"):
+    if len(args.query_str) < len("SELECT *"):
         raise QueryTooShort()
 
     compiler(query_str=args.query_str, query_name=args.query_name, output_dir=args.output_dir)
-
