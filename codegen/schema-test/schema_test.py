@@ -9,19 +9,21 @@ import pyarrow.parquet as parquet
 
   
 if __name__ == "__main__":
-    my_schema = pa.schema([('id', pa.int32(), False),
+    in_schema = pa.schema([('id', pa.int32(), False),
                            ('int1', pa.int32(), False),
                            ('int2', pa.int32()),
                            ('string1', pa.string()),
                            ('timestamp1',pa.timestamp('ms'), False)])
 
-    with open("schema.fbs",'wb') as file:
-        s_serialized = my_schema.serialize()
+    with open("in_schema.fbs",'wb') as file:
+        s_serialized = in_schema.serialize()
         file.write(s_serialized)
 
-    schema = pa.read_schema("schema.fbs")
+    out_schema = pa.schema([('int1', pa.int32(), False),
+                           ('concat', pa.string(), False),
+                           ('concat2', pa.string(), False)])
 
-    for col in schema:
-        print(col)
+    with open("out_schema.fbs", 'wb') as file:
+        s_serialized = out_schema.serialize()
+        file.write(s_serialized)
 
-    

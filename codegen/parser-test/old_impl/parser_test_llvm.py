@@ -2,13 +2,17 @@ import moz_sql_parser as msp
 
 import pyarrow as pa
 
-import ast
+import llvmlite.ir as ir
 
-import astunparse
+datatypes = {
+    pa.Int32Value: ir.IntType(4),
+    pa.DoubleValue: ir.DoubleType(),
+    pa.StringValue: ir.ArrayType(ir.IntType(1),255)
+}
 
 boolops = {
-    'and': ast.And,
-    'or': ast.Or,
+    'and': ir.IRBuilder.and_,
+    'or': ir.IRBuilder.or_,
 }
 
 binops = {
@@ -142,7 +146,7 @@ def getUnOp(op,a):
 
 def getLiteralOp(op,content):
     if op in literals:
-        if isinstance(content, str):
+        if isinstance(content, str) and op == 'literal':
             return ast.Str(content)
         else:
             return getCppCode(content)
@@ -164,8 +168,13 @@ if __name__ == "__main__":
 
     schema = pa.read_schema("../schema-test/schema.fbs")
 
+    name_reg = {}
+
     for col in schema:
-        print("Field: {}, type: {}, nullable: {}".format(col.name,col.type,col.nullable))
+        #print("Field: {}, type: {}, nullable: {}".format(col.name, col.type, col.nullable))
+        name_reg[col.name] = {"type": col.type, "nullable": col.nullable}
+
+    print(name_reg)
 
     obj = msp.parse("select a, CONCAT('a','b','c') as concat from jobs WHERE a > 5 AND (-b) < 3")
 

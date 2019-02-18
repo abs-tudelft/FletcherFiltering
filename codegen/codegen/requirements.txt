@@ -1,0 +1,10 @@
+#moz-sql-parser
+typed-ast
+pandas
+pyarrow
+numpy
+astunparse
+llvmlite
+sqlparse
+typed-astunparse
+#transpyle[c,cpp]
