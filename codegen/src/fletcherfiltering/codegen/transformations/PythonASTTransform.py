@@ -3,7 +3,7 @@ from typing import Union, Tuple
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
-from .. import debug
+from .. import debug, settings
 from .helpers import make_comment
 from .helpers.ArrowTypeResolver import ArrowTypeResolver
 from .helpers.FunctionResolver import FunctionResolver, PrePostAST
@@ -19,30 +19,31 @@ class PythonASTTransform(BaseTransform):
         self.func_resolver = FunctionResolver()
         self.query_name = 'query'
 
-    def transform(self, node, query_name : str = 'query'):
+    def transform(self, node, query_name: str = 'query'):
         self.query_name = query_name
         return self.visit(node)
 
     # region Schema Helpers
 
-    def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema") -> ast.Expr:
+    def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema", test_data=False) -> ast.Expr:
         schema_ast = []
         for col in schema:
             col_def = ast.AnnAssign(
                 target=ast.Name(
                     id=col.name,
                     ctx=ast.Store()),
-                annotation=self.type_resolver.resolve(arrow_type=col.type, as_stream=True),
+                annotation=self.type_resolver.resolve(arrow_type=col.type, as_stream=not test_data,
+                                                      as_pointer=(test_data and col.type in settings.VAR_LENGTH_TYPES)),
                 value=None,
                 simple=1)
             schema_ast.append(col_def)
 
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES and not test_data:
                 col_def_len = ast.AnnAssign(
                     target=ast.Name(
-                        id=col.name + self.LENGTH_POSTFIX,
+                        id=col.name + settings.LENGTH_SUFFIX,
                         ctx=ast.Store()),
-                    annotation=self.type_resolver.resolve(arrow_type=self.LENGTH_TYPE, as_stream=True),
+                    annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE, as_stream=not test_data),
                     value=None,
                     simple=1)
                 schema_ast.append(col_def_len)
@@ -59,14 +60,14 @@ class PythonASTTransform(BaseTransform):
     def get_load_schema_ast(self, schema: pa.Schema):
         schema_ast = []
         for col in schema:
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 col_tmp_def = ast.AnnAssign(
                     target=ast.Subscript(
                         value=ast.Name(
                             id=col.name,
                             ctx=ast.Store()
                         ),
-                        slice=ast.Index(ast.Num(self.VAR_LENGTH)),
+                        slice=ast.Index(ast.Num(settings.VAR_LENGTH)),
                         ctx=ast.Store()
                     ),
                     annotation=self.type_resolver.resolve(arrow_type=col.type),
@@ -83,12 +84,12 @@ class PythonASTTransform(BaseTransform):
 
             col_tmp_def_len = ast.AnnAssign(
                 target=ast.Name(
-                    id=col.name + self.LENGTH_POSTFIX,
+                    id=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Store()),
-                annotation=self.type_resolver.resolve(arrow_type=self.LENGTH_TYPE),
+                annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE),
                 value=None,
                 simple=1)
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 col_load = ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
@@ -99,7 +100,7 @@ class PythonASTTransform(BaseTransform):
                         args=[
                             ast.Num(0),
                             ast.Name(
-                                id=col.name + self.LENGTH_POSTFIX,
+                                id=col.name + settings.LENGTH_SUFFIX,
                                 ctx=ast.Load()
                             )
                         ],
@@ -158,11 +159,118 @@ class PythonASTTransform(BaseTransform):
                     ctx=ast.Store()),
                 type_comment=None))
 
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 schema_ast.append(col_tmp_def_len)
                 schema_ast.append(col_load_len)
 
             schema_ast.append(col_tmp_def)
+            schema_ast.append(col_load)
+        return schema_ast
+
+    def get_load_test_ast(self, schema: pa.Schema):
+        schema_ast = []
+        for col in schema:
+            if col.type in settings.VAR_LENGTH_TYPES:
+                col_load = ast.For(
+                    target=ast.Name(id='i', ctx=ast.Store()),
+                    iter=ast.Call(
+                        func=ast.Name(
+                            id='range',
+                            ctx=ast.Load()
+                        ),
+                        args=[
+                            ast.Num(0),
+                            ast.Name(
+                                id=col.name + settings.LENGTH_SUFFIX,
+                                ctx=ast.Load())
+                        ],
+                        keywords=[]
+                    ),
+                    body=[ast.Expr(ast.BinOp(
+                        left=ast.Attribute(
+                            value=ast.Name(
+                                id='in_data',
+                                ctx=ast.Load()),
+                            attr=col.name,
+                            ctx=ast.Load()),
+                        op=ast.LShift(),
+                        right=ast.Subscript(
+                            value=ast.Attribute(
+                                value=ast.Name(
+                                    id='in_data_test',
+                                    ctx=ast.Load()),
+                                attr=col.name,
+                                ctx=ast.Load()),
+                            slice=ast.Index(ast.Name(
+                                id='i',
+                                ctx=ast.Load()
+                            )),
+                            ctx=ast.Store()
+                        ),
+                        type_comment=None)
+                    )],
+                    orelse=None,
+                    type_comment=ast.Name(
+                        id='int',
+                        ctx=ast.Load()
+                    )
+                )
+            else:
+                col_load = ast.Expr(ast.BinOp(
+                    left=ast.Attribute(
+                        value=ast.Name(
+                            id='in_data',
+                            ctx=ast.Load()),
+                        attr=col.name,
+                        ctx=ast.Load()),
+                    op=ast.LShift(),
+                    right=ast.Attribute(
+                        value=ast.Name(
+                            id='in_data_test',
+                            ctx=ast.Load()),
+                        attr=col.name,
+                        ctx=ast.Load()),
+                    type_comment=None))
+
+            col_def_len = ast.AnnAssign(
+                target=ast.Name(
+                    id=col.name + settings.LENGTH_SUFFIX,
+                    ctx=ast.Store()),
+                annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE),
+                value=ast.Call(
+                    func=ast.Name(
+                        id='strlen',
+                        ctx=ast.Load()
+                    ),
+                    args=[
+                        ast.Attribute(
+                            value=ast.Name(
+                                id='in_data_test',
+                                ctx=ast.Load()
+                            ),
+                            attr=col.name,
+                            ctx=ast.Load())
+                    ],
+                    keywords=[]),
+                simple=1)
+
+            col_load_len = ast.Expr(ast.BinOp(
+                left=ast.Attribute(
+                    value=ast.Name(
+                        id='in_data',
+                        ctx=ast.Load()),
+                    attr=col.name + "_len",
+                    ctx=ast.Load()),
+                op=ast.LShift(),
+                right=ast.Name(
+                    id=col.name + settings.LENGTH_SUFFIX,
+                    ctx=ast.Load()),
+                type_comment=None))
+
+            if col.type in settings.VAR_LENGTH_TYPES:
+                schema_ast.append(col_def_len)
+                schema_ast.append(col_load_len)
+
             schema_ast.append(col_load)
         return schema_ast
 
@@ -171,7 +279,7 @@ class PythonASTTransform(BaseTransform):
         for col in schema:
             col_name_code = col.name + "_o"
 
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 output_col_ast = ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
@@ -182,7 +290,7 @@ class PythonASTTransform(BaseTransform):
                         args=[
                             ast.Num(0),
                             ast.Name(
-                                id=col_name_code + self.LENGTH_POSTFIX,
+                                id=col_name_code + settings.LENGTH_SUFFIX,
                                 ctx=ast.Load()
                             )
                         ],
@@ -238,37 +346,193 @@ class PythonASTTransform(BaseTransform):
                     value=ast.Name(
                         id='out_data',
                         ctx=ast.Load()),
-                    attr=col.name + self.LENGTH_POSTFIX,
+                    attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Store()),
                 op=ast.LShift(),
                 right=ast.Name(
-                    id=col_name_code + self.LENGTH_POSTFIX,
+                    id=col_name_code + settings.LENGTH_SUFFIX,
                     ctx=ast.Load()
                 ),
                 type_comment=None))
 
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 schema_ast.append(output_col_ast_len)
 
             schema_ast.append(output_col_ast)
         return schema_ast
 
-    def get_in_schema_ast(self) -> ast.Expr:
-        return self.get_schema_ast(self.in_schema, "in_schema")
+    def get_store_test_ast(self, schema: pa.Schema):
+        schema_ast = []
+        for col in schema:
+            col_name_code = col.name + settings.OUTPUT_SUFFIX
+            if col.type in settings.VAR_LENGTH_TYPES:
+                output_col_ast = ast.For(
+                    target=ast.Name(id='i', ctx=ast.Store()),
+                    iter=ast.Call(
+                        func=ast.Name(
+                            id='range',
+                            ctx=ast.Load()
+                        ),
+                        args=[
+                            ast.Num(0),
+                            ast.Name(
+                                id=col_name_code + settings.LENGTH_SUFFIX,
+                                ctx=ast.Load()
+                            )
+                        ],
+                        keywords=[]
+                    ),
+                    body=[ast.Expr(ast.BinOp(
+                        left=
+                        ast.Attribute(
+                            value=ast.Name(
+                                id='out_data',
+                                ctx=ast.Load()),
+                            attr=col.name,
+                            ctx=ast.Store()),
+                        op=ast.RShift(),
+                        right=ast.Subscript(
+                            value=ast.Attribute(
+                                value=ast.Name(
+                                    id='out_data_test',
+                                    ctx=ast.Load()),
+                                attr=col.name,
+                                ctx=ast.Load()),
+                            slice=ast.Index(ast.Name(
+                                id='i',
+                                ctx=ast.Load()
+                            )),
+                            ctx=ast.Load()
+                        ),
+                        type_comment=None))
+                    ],
+                    orelse=None,
+                    type_comment=ast.Name(
+                        id='int',
+                        ctx=ast.Load()
+                    )
+                )
+            else:
+                output_col_ast = ast.Expr(ast.BinOp(
+                    left=
+                    ast.Attribute(
+                        value=ast.Name(
+                            id='out_data',
+                            ctx=ast.Load()),
+                        attr=col.name,
+                        ctx=ast.Store()),
+                    op=ast.RShift(),
+                    right=ast.Attribute(
+                        value=ast.Name(
+                            id='out_data_test',
+                            ctx=ast.Load()),
+                        attr=col.name,
+                        ctx=ast.Load()),
+                    type_comment=None))
 
-    def get_out_schema_ast(self) -> ast.Expr:
-        return self.get_schema_ast(self.out_schema, "out_schema")
+            output_col_null_term = ast.Assign(
+                targets=[
+                    ast.Subscript(
+                        value=ast.Attribute(
+                            value=ast.Name(
+                                id='out_data_test',
+                                ctx=ast.Load()),
+                            attr=col.name,
+                            ctx=ast.Load()),
+                        slice=ast.Index(
+                            ast.Name(
+                                id=col_name_code + settings.LENGTH_SUFFIX,
+                                ctx=ast.Load()
+                            )
+                        ),
+                        ctx=ast.Load()
+                    )
+                ],
+                value=ast.Bytes(s='\0')
+            )
+
+            output_col_ast_len = ast.Expr(ast.BinOp(
+                left=
+                ast.Attribute(
+                    value=ast.Name(
+                        id='out_data',
+                        ctx=ast.Load()),
+                    attr=col.name + settings.LENGTH_SUFFIX,
+                    ctx=ast.Store()),
+                op=ast.RShift(),
+                right=ast.Name(
+                    id=col_name_code + settings.LENGTH_SUFFIX,
+                    ctx=ast.Load()
+                ),
+                type_comment=None))
+
+            output_col_def_len = ast.AnnAssign(
+                target=ast.Name(
+                    id=col_name_code + settings.LENGTH_SUFFIX,
+                    ctx=ast.Store()),
+                annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE),
+                value=None,
+                simple=1)
+
+            if col.type in settings.VAR_LENGTH_TYPES:
+                schema_ast.append(output_col_def_len)
+                schema_ast.append(output_col_ast_len)
+
+            schema_ast.append(output_col_ast)
+            if col.type in settings.VAR_LENGTH_TYPES:
+                schema_ast.append(output_col_null_term)
+        return schema_ast
+
+    def get_in_schema_ast(self, test_data=False) -> ast.Expr:
+        return self.get_schema_ast(self.in_schema, "in_schema" if not test_data else "in_schema" + settings.TEST_SUFFIX,
+                                   test_data)
+
+    def get_out_schema_ast(self, test_data=False) -> ast.Expr:
+        return self.get_schema_ast(self.out_schema,
+                                   "out_schema" if not test_data else "out_schema" + settings.TEST_SUFFIX,
+                                   test_data)
 
     def get_input_ast(self) -> list:
         return self.get_load_schema_ast(self.in_schema)
 
-    def get_output_ast(self) -> ast.If:
-        return ast.If(
-            test=ast.Name(
-                id='__pass_record',
-                ctx=ast.Load()),
-            body=self.get_store_schema_ast(self.out_schema),
-            orelse=[])
+    def get_output_ast(self) -> list:
+        return [
+            ast.If(
+                test=ast.Name(
+                    id=settings.PASS_VAR_NAME,
+                    ctx=ast.Load()),
+                body=self.get_store_schema_ast(self.out_schema),
+                orelse=[])
+        ]
+
+    def get_input_test_ast(self) -> list:
+        return [
+                   ast.AnnAssign(
+                       target=ast.Name(
+                           id='in_data',
+                           ctx=ast.Store()),
+                       annotation=ast.Name(id='in_schema', ctx=ast.Load()),
+                       value=None,
+                       simple=1),
+                   ast.AnnAssign(
+                       target=ast.Name(
+                           id='out_data',
+                           ctx=ast.Store()),
+                       annotation=ast.Name(id='out_schema', ctx=ast.Load()),
+                       value=None,
+                       simple=1)
+
+               ] + self.get_load_test_ast(self.in_schema)
+
+    def get_output_test_ast(self) -> list:
+        return [
+            ast.If(
+                test=ast.Name(
+                    id=settings.PASS_VAR_NAME,
+                    ctx=ast.Load()),
+                body=self.get_store_test_ast(self.out_schema),
+                orelse=[])
+        ]
 
     # endregion
 
@@ -461,11 +725,11 @@ class PythonASTTransform(BaseTransform):
 
             col = self.out_schema.field_by_name(col_name)
             assert (col is not None)
-            col_name_code = col.name + self.OUTPUT_POSTFIX
+            col_name_code = col.name + settings.OUTPUT_SUFFIX
 
             col_value = self.visit(select_col)
 
-            col_len_ast = ast.Num(self.VAR_LENGTH)
+            col_len_ast = ast.Num(settings.VAR_LENGTH)
 
             if isinstance(col_value, PrePostAST):
                 col_value_ast = col_value.ast
@@ -473,8 +737,13 @@ class PythonASTTransform(BaseTransform):
                     col_len_ast = col_value.len_ast
             else:
                 col_value_ast = col_value
+                if isinstance(col_value, ast.Name):
+                    col_len_ast = ast.Name(
+                        id=col_value.id + settings.LENGTH_SUFFIX,
+                        ctx=col_value.ctx
+                    )
 
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 col_ast = ast.AnnAssign(
                     target=ast.Name(
                         id=col_name_code,
@@ -494,7 +763,7 @@ class PythonASTTransform(BaseTransform):
 
             col_len = ast.AnnAssign(
                 target=ast.Name(
-                    id=col_name_code + self.LENGTH_POSTFIX,
+                    id=col_name_code + settings.LENGTH_SUFFIX,
                     ctx=ast.Store()),
                 annotation=ast.Name(
                     id='int',
@@ -506,7 +775,7 @@ class PythonASTTransform(BaseTransform):
                 if col_value.pre_ast is not None:
                     select_ast.append(col_value.pre_ast)
             select_ast.append(col_ast)
-            if col.type in self.VAR_LENGTH_TYPES:
+            if col.type in settings.VAR_LENGTH_TYPES:
                 select_ast.append(col_len)
             if isinstance(col_value, PrePostAST):
                 if col_value.post_ast is not None:
@@ -522,7 +791,7 @@ class PythonASTTransform(BaseTransform):
     def visit_Where(self, node: ast_nodes.Where) -> ast.AnnAssign:
         return ast.AnnAssign(
             target=ast.Name(
-                id='__pass_record',
+                id=settings.PASS_VAR_NAME,
                 ctx=ast.Store()
             ),
             annotation=ast.Name(
@@ -533,10 +802,10 @@ class PythonASTTransform(BaseTransform):
             simple=1
         )
 
-    def visit_Query(self, node: ast_nodes.Query) -> Tuple[list, list]:
+    def visit_Query(self, node: ast_nodes.Query) -> Tuple[list, list, list, list]:
         debug(node)
         function_ast = ast.FunctionDef(
-            name='query',
+            name=self.query_name,
             args=ast.arguments(
                 args=[
                     ast.arg(
@@ -558,11 +827,87 @@ class PythonASTTransform(BaseTransform):
                 kwarg=None,
                 defaults=[]),
             body=self.get_input_ast() + [make_comment("Start of data processing")] + self.visit(node.q) + [
-                make_comment("End of data processing")] + [self.get_output_ast()],
+                make_comment("End of data processing")] + self.get_output_ast() + [
+                     ast.Expr(ast.Return(
+                         value=ast.Name(
+                             id=settings.PASS_VAR_NAME,
+                             ctx=ast.Load()
+                         )
+                     ))
+                 ],
             decorator_list=[],
             returns=ast.Name(
                 id='bool',
-                ctx=ast.Load()),
+                ctx=ast.Load()
+            ),
+            type_comment=None)
+
+        test_function_ast = ast.FunctionDef(
+            name=self.query_name + settings.TEST_SUFFIX,
+            args=ast.arguments(
+                args=[
+                    ast.arg(
+                        arg='in_data' + settings.TEST_SUFFIX,
+                        annotation=ast.Index(ast.Name(
+                            id='in_schema' + settings.TEST_SUFFIX,
+                            ctx=ast.Load())),
+                        type_comment=None),
+                    ast.arg(
+                        arg='out_data' + settings.TEST_SUFFIX,
+                        annotation=ast.Index(ast.Name(
+                            id='out_schema' + settings.TEST_SUFFIX,
+                            ctx=ast.Load())),
+                        type_comment=None)
+                ],
+                vararg=None,
+                kwonlyargs=[],
+                kw_defaults=[],
+                kwarg=None,
+                defaults=[]),
+            body=self.get_input_test_ast() + [
+                make_comment("Start of query code"),
+                ast.AnnAssign(
+                    target=ast.Name(
+                        id=settings.PASS_VAR_NAME,
+                        ctx=ast.Store()
+                    ),
+                    annotation=ast.Name(
+                        id='bool',
+                        ctx=ast.Load()
+                    ),
+                    value=ast.Call(
+                        func=ast.Name(
+                            id=self.query_name,
+                            ctx=ast.Load()
+                        ),
+                        args=[
+                            ast.Name(
+                                id='in_data',
+                                ctx=ast.Load()
+                            ),
+                            ast.Name(
+                                id='out_data',
+                                ctx=ast.Load()
+                            )
+                        ],
+                        keywords=[]
+                    ),
+                    simple=1
+                ),
+                make_comment("End of query code")
+            ] + self.get_output_test_ast() + [
+                     ast.Expr(ast.Return(
+                         value=ast.Name(
+                             id=settings.PASS_VAR_NAME,
+                             ctx=ast.Load()
+                         )
+                     ))
+                 ],
+            decorator_list=[],
+            returns=ast.Name(
+                id='bool',
+                ctx=ast.Load()
+            ),
             type_comment=None)
 
         header_ast = [self.get_in_schema_ast(),
@@ -574,4 +919,14 @@ class PythonASTTransform(BaseTransform):
             function_ast
         ]
 
-        return (header_ast, code_ast)
+        test_header_ast = [
+            self.get_in_schema_ast(test_data=True),
+            self.get_out_schema_ast(test_data=True),
+            test_function_ast
+        ]
+
+        test_code_ast = [
+            test_function_ast
+        ]
+
+        return (header_ast, code_ast, test_header_ast, test_code_ast)

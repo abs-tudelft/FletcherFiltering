@@ -496,3 +496,5 @@ venv.bak/
 cmake-build-*/
 
 *.fbs
+**/fletcherfiltering_test_workspace/**
+**/mysql-data/**

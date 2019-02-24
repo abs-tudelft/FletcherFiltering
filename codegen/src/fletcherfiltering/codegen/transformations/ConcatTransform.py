@@ -2,7 +2,7 @@ import typed_ast.ast3 as ast
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
-from .. import debug
+from .. import debug,settings
 from ..exceptions import *
 
 
@@ -48,16 +48,16 @@ class ConcatTransform(BaseTransform):
         if col.type != pa.string():
             raise UnsupportedArgumentTypeError()
 
-        if col.type in self.VAR_LENGTH_TYPES:
-            return [node, ast_nodes.IntermediaryReference(id=col.name + self.LENGTH_POSTFIX)]
+        if col.type in settings.VAR_LENGTH_TYPES:
+            return [node, ast_nodes.IntermediaryReference(id=col.name + settings.LENGTH_SUFFIX)]
 
     def param_TrueValue(self, node: ast_nodes.TrueValue) -> list:
         debug(node)
-        return [ast_nodes.StringValue(value='TRUE'), ast_nodes.IntValue(value=4)]
+        return [ast_nodes.StringValue(value='1'), ast_nodes.IntValue(value=1)]
 
     def param_FalseValue(self, node: ast_nodes.FalseValue) -> list:
         debug(node)
-        return [ast_nodes.StringValue(value='FALSE'), ast_nodes.IntValue(value=5)]
+        return [ast_nodes.StringValue(value='0'), ast_nodes.IntValue(value=1)]
 
     def param_NullValue(self, node: ast_nodes.NullValue) -> list:
         debug(node)

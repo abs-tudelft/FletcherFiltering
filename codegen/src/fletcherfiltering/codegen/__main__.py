@@ -1,4 +1,5 @@
 from .compiler import Compiler
+from .. import settings
 
 import os
 import os.path
@@ -45,7 +46,7 @@ if __name__ == "__main__":
 
     compiler = Compiler(in_schema, out_schema)
 
-    if len(args.query_str) < len("SELECT *"):
+    if len(args.query_str) < settings.MINIMAL_QUERY_LENGTH:
         raise QueryTooShort()
 
     compiler(query_str=args.query_str, query_name=args.query_name, output_dir=args.output_dir)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true" buildAllGenerated="false">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
     <generated />
   </component>
   <component name="CMakeSettings">
@@ -10,11 +10,52 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="999d825e-9225-4f8f-87b5-8b12af73193c" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/parser-test/parser_test_module.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements-test.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/setup.cfg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/fletcherfiltering/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/fletcherfiltering/settings.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/data_generation/BaseGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/data_generation/IntGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/data_generation/SentenceGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/data_generation/UIntGenerator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/data_generation/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helpers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helpers/base_query.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helpers/cstruct_wrapper.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helpers/ctypes_type_mapper.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helpers/mysql_type_mapper.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helpers/python_class_generator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/queries/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/queries/test_combination1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/queries/test_concat.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/queries/test_wildcard.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_compiler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../codegen-cpp/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../codegen-cpp/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../codegen-cpp/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../codegen-cpp/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/codegen.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codegen.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/codegen/__main__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parser-test/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/parser-test/parser_test_ast2.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/__main__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/compiler.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/exceptions/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/BaseTransform.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/ConcatTransform.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/WildcardTransform.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/ConstantPropagationTransform.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/PythonASTTransform.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/WhereTransform.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/helpers/ArrowTypeResolver.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/helpers/FunctionResolver.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/codegen/transformations/helpers/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/parser-test/parser_test_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/parser_test_module.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -23,9 +64,14 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
+    <SUITE FILE_PATH="coverage/codegen$codegen_module.coverage" NAME="codegen_module Coverage Results" MODIFIED="1550958125862" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/parser-test" />
     <SUITE FILE_PATH="coverage/codegen$parser_test_old.coverage" NAME="parser_test_old Coverage Results" MODIFIED="1548332515962" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/parser-test" />
+    <SUITE FILE_PATH="coverage/codegen$pytest_for_codegen.coverage" NAME="pytest for codegen Coverage Results" MODIFIED="1551034631893" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/codegen$schema_test.coverage" NAME="schema_test Coverage Results" MODIFIED="1548774653448" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/schema-test" />
-    <SUITE FILE_PATH="coverage/codegen$parser_test.coverage" NAME="parser_test Coverage Results" MODIFIED="1550507030700" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/parser-test" />
+    <SUITE FILE_PATH="coverage/codegen$parser_test.coverage" NAME="parser_test Coverage Results" MODIFIED="1551035264668" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/parser-test" />
+  </component>
+  <component name="CoverageViewManager">
+    <option name="myElementSize" value="1145" />
   </component>
   <component name="DatabaseView">
     <option name="SHOW_INTERMEDIATE" value="true" />
@@ -43,34 +89,13 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/codegen/__main__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="451">
-              <caret line="47" column="28" selection-start-line="47" selection-start-column="28" selection-end-line="47" selection-end-column="28" />
-              <folding>
-                <element signature="e#1#31#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/exceptions/__init__.py">
+        <entry file="file://$PROJECT_DIR$/tests/helpers/base_query.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="19" selection-start-line="9" selection-start-column="6" selection-end-line="9" selection-end-column="19" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/compiler.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="97">
-              <caret line="17" column="66" selection-start-line="17" selection-start-column="66" selection-end-line="17" selection-end-column="66" />
+            <state relative-caret-position="610">
+              <caret line="210" selection-start-line="210" selection-end-line="210" />
               <folding>
-                <element signature="e#0#20#0" expanded="true" />
+                <element signature="e#0#22#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -79,8 +104,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="314">
-              <caret line="34" column="139" selection-start-line="34" selection-start-column="21" selection-end-line="34" selection-end-column="139" />
+            <state>
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -89,10 +113,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/transformations/helpers/ArrowTypeResolver.py">
+        <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1365">
-              <caret line="91" column="24" lean-forward="true" selection-start-line="91" selection-start-column="24" selection-end-line="91" selection-end-column="24" />
+            <state relative-caret-position="904">
+              <caret line="333" column="5" lean-forward="true" selection-start-line="317" selection-start-column="4" selection-end-line="333" selection-end-column="5" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -100,29 +124,19 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/transformations/PythonASTTransform.py">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/requirements.txt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-292">
-              <caret line="448" column="51" selection-start-line="448" selection-start-column="41" selection-end-line="448" selection-end-column="51" />
-              <folding>
-                <element signature="e#0#28#0" expanded="true" />
-                <element signature="e#665#688#0" />
-                <element signature="e#9901#9926#0" />
-                <element signature="e#10738#10766#0" />
-                <element signature="e#11634#11649#0" />
-                <element signature="e#12332#12350#0" />
-                <marker date="1550498962191" expanded="true" signature="12568:14731" ph="..." />
-              </folding>
+            <state relative-caret-position="105">
+              <caret line="7" column="17" lean-forward="true" selection-start-line="7" selection-start-column="17" selection-end-line="7" selection-end-column="17" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/transformations/BaseTransform.py">
+        <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_llvm.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-41">
-              <caret line="6" column="39" selection-start-line="6" selection-start-column="24" selection-end-line="6" selection-end-column="39" />
+            <state>
               <folding>
                 <element signature="e#0#28#0" expanded="true" />
               </folding>
@@ -131,19 +145,15 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/transformations/ConcatTransform.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-345">
-              <caret line="4" column="20" selection-start-line="4" selection-start-column="20" selection-end-line="4" selection-end-column="20" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_sqlparse.py">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/parser-test/parser_test_module.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="12" column="45" lean-forward="true" selection-start-line="12" selection-start-column="45" selection-end-line="12" selection-end-column="45" />
+            <state relative-caret-position="105">
+              <caret line="7" column="60" selection-start-line="7" selection-start-column="60" selection-end-line="7" selection-end-column="60" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -152,15 +162,29 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/codegen/transformations/ConstantPropagationTransform.py">
+        <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/PythonASTTransform.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="65">
-              <caret line="20" column="31" lean-forward="true" selection-start-line="20" selection-start-column="31" selection-end-line="20" selection-end-column="31" />
+            <state relative-caret-position="693">
+              <caret line="738" selection-start-line="738" selection-end-line="738" />
               <folding>
                 <element signature="e#0#28#0" expanded="true" />
+                <element signature="e#2284#6509#0" />
+                <element signature="e#6571#10635#0" />
+                <element signature="e#10700#13856#0" />
+                <marker date="1551035222255" expanded="true" signature="23029:25192" ph="..." />
               </folding>
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/fletcherfiltering_test_workspace/QueryConcat.cpp">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/fletcherfiltering_test_workspace/QueryWildcard.cpp">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
     </leaf>
@@ -174,17 +198,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>self = cls()</find>
-      <find>, as_stream=False)</find>
-      <find>as_stream=False</find>
-      <find>Compa</find>
-      <find>self.VAR_LENGTH</find>
-      <find>self.VAR_LENGTH)</find>
-      <find>buffer</find>
-      <find>self.set_fields()</find>
-      <find>genera</find>
-      <find>True</find>
-      <find>Column</find>
       <find>_len</find>
       <find>'_o'</find>
       <find>true</find>
@@ -204,6 +217,17 @@
       <find>astunparse</find>
       <find>And</find>
       <find>debug</find>
+      <find>func</find>
+      <find>Call</find>
+      <find>AnnAss</find>
+      <find>return</find>
+      <find>__pas</find>
+      <find>, as_pointer: bool = False</find>
+      <find>extern</find>
+      <find>char</find>
+      <find>ast.Assign</find>
+      <find>VAR_LENGTH</find>
+      <find>todo</find>
     </findStrings>
     <replaceStrings>
       <replace>*</replace>
@@ -227,65 +251,64 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/parser-test/vhdre/vhdre.py" />
-        <option value="$PROJECT_DIR$/parser-test/vhdre/requirements.txt" />
-        <option value="$PROJECT_DIR$/parser-test/vhdre/__main__.py" />
-        <option value="$PROJECT_DIR$/parser-test/vhdre/__init__.py" />
-        <option value="$PROJECT_DIR$/vhdre/__main__.py" />
-        <option value="$PROJECT_DIR$/vhdre/__init__.py" />
-        <option value="$PROJECT_DIR$/parser-test/cpp/fletcherfiltering.h" />
-        <option value="$PROJECT_DIR$/parser-test/cpp/fletcherfiltering.cpp" />
-        <option value="$PROJECT_DIR$/filtergen/AstGeneralizer.py" />
-        <option value="$PROJECT_DIR$/filtergen/Parser.py" />
-        <option value="$PROJECT_DIR$/test.ttl" />
-        <option value="$PROJECT_DIR$/../../transpyle/transpyle/sql/parser.py" />
-        <option value="$PROJECT_DIR$/parser-test/parser_test_ast.py" />
-        <option value="$PROJECT_DIR$/requirements.txt" />
-        <option value="$PROJECT_DIR$/../../moz-sql-parser/moz_sql_parser/__init__.py" />
-        <option value="$PROJECT_DIR$/../../transpyle/transpyle/sql/ast_generalizer.py" />
-        <option value="$PROJECT_DIR$/parser-test/transformations/BasicASTTransform.py" />
-        <option value="$PROJECT_DIR$/parser-test/transformations/TypeTransformation.py" />
-        <option value="$PROJECT_DIR$/parser-test/transformations/helpers/TypeResolver.py" />
-        <option value="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py" />
-        <option value="$PROJECT_DIR$/parser-test/transformations/helpers/ArrowTypeResolver.py" />
-        <option value="$PROJECT_DIR$/parser-test/exceptions/__init__.py" />
-        <option value="$PROJECT_DIR$/parser-test/transformations/PythonASTTransform.py" />
+        <option value="$PROJECT_DIR$/setup.cfg" />
+        <option value="$APPLICATION_CONFIG_DIR$/consoles/db/f6ecb91e-3f7b-4943-b599-f8d682ea7d72/console.sql" />
+        <option value="$PROJECT_DIR$/tests/queries/test1.sql" />
+        <option value="$PROJECT_DIR$/tests/queries/__init__.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/__init__.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/BaseQuery.py" />
         <option value="$PROJECT_DIR$/schema-test/schema_test.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/helpers/ArrowTypeResolver.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/exceptions/__init__.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/__init__.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/WhereTransform.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/helpers/ArrowTypeResolver.py" />
+        <option value="$PROJECT_DIR$/tests/conftests.py" />
+        <option value="$PROJECT_DIR$/tests/data_generation/BaseGenerator.py" />
+        <option value="$PROJECT_DIR$/tests/data_generation/StringGenerator.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/__init__.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/__init__.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/__main__.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/BaseTransform.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/ConstantPropagationTransform.py" />
+        <option value="$PROJECT_DIR$/tests/data_generation/UIntGenerator.py" />
+        <option value="$PROJECT_DIR$/tests/data_generation/IntGenerator.py" />
+        <option value="$PROJECT_DIR$/requirements-test.txt" />
+        <option value="$PROJECT_DIR$/tests/queries/test1/test1.sql" />
+        <option value="$PROJECT_DIR$/tests/helpers/mysql_type_mapper.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/pyformat_type_mapper.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/settings.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/ctypes_type_mapper.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/CStructWrapper.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/cstruct_wrapper.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/python_class_generator.py" />
+        <option value="$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/QueryTest1_test.cpp" />
+        <option value="$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/QueryTest1_test.h" />
         <option value="$PROJECT_DIR$/../../transpyle/transpyle/cpp/unparser.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/BaseTransform.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/ExpandFunctionParamsTransform.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/helpers/FunctionResolver.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/helpers/__init__.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/PythonASTTransform.py" />
-        <option value="$PROJECT_DIR$/../../moz-sql-parser/moz_sql_parser/ast_nodes.py" />
-        <option value="$PROJECT_DIR$/../../moz-sql-parser/moz_sql_parser/sql_parser.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/ConstantPropagationTransform.py" />
-        <option value="$PROJECT_DIR$/parser-test/codegen/transformations/ConcatTransform.py" />
-        <option value="$PROJECT_DIR$/parser-test/parser_test_ast2.py" />
-        <option value="$PROJECT_DIR$/codegen/__init__.py" />
-        <option value="$PROJECT_DIR$/codegen/transformations/helpers/__init__.py" />
-        <option value="$PROJECT_DIR$/codegen/transformations/ConcatTransform.py" />
-        <option value="$PROJECT_DIR$/codegen/transformations/WhereTransform.py" />
-        <option value="$PROJECT_DIR$/codegen/transformations/BaseTransform.py" />
-        <option value="$PROJECT_DIR$/codegen/transformations/ConstantPropagationTransform.py" />
-        <option value="$PROJECT_DIR$/codegen/transformations/PythonASTTransform.py" />
-        <option value="$PROJECT_DIR$/codegen/compiler.py" />
-        <option value="$PROJECT_DIR$/codegen/exceptions/__init__.py" />
-        <option value="$PROJECT_DIR$/parser-test/parser-test-module.py" />
+        <option value="$PROJECT_DIR$/tests/test_compiler.py" />
+        <option value="$PROJECT_DIR$/tests/test_settings.py" />
+        <option value="$PROJECT_DIR$/run-pytest.sh" />
+        <option value="$PROJECT_DIR$/tests/queries/test2/test2.py" />
+        <option value="$PROJECT_DIR$/tests/queries/test1/test1.py" />
+        <option value="$PROJECT_DIR$/tests/conftest.py" />
+        <option value="$PROJECT_DIR$/tests/data_generation/SentenceGenerator.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/DesugarTransform.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/WhereTransform.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/ConcatTransform.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/compiler.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/WildcardTransform.py" />
+        <option value="$PROJECT_DIR$/tests/queries/test_wildcard.py" />
+        <option value="$PROJECT_DIR$/tests/queries/test2.py" />
+        <option value="$PROJECT_DIR$/tests/queries/test1.py" />
+        <option value="$PROJECT_DIR$/tests/queries/test_concat.py" />
+        <option value="$PROJECT_DIR$/tests/helpers/base_query.py" />
         <option value="$PROJECT_DIR$/parser-test/parser_test_module.py" />
-        <option value="$PROJECT_DIR$/codegen/__main__.py" />
+        <option value="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/PythonASTTransform.py" />
+        <option value="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py" />
+        <option value="$PROJECT_DIR$/requirements.txt" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-1" />
     <option name="y" value="23" />
-    <option name="width" value="1920" />
-    <option name="height" value="1007" />
+    <option name="width" value="3840" />
+    <option name="height" value="2087" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -295,7 +318,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -306,42 +328,56 @@
             <path>
               <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="schema-test" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
+              <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
+              <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="fletcherfiltering" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
+              <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="fletcherfiltering" type="462c0819:PsiDirectoryNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
-              <item name="codegen" type="462c0819:PsiDirectoryNode" />
-              <item name="exceptions" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="fletcherfiltering" type="462c0819:PsiDirectoryNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
               <item name="transformations" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="tests" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
-              <item name="transformations" type="462c0819:PsiDirectoryNode" />
+              <item name="tests" type="462c0819:PsiDirectoryNode" />
+              <item name="data_generation" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
+              <item name="codegen" type="462c0819:PsiDirectoryNode" />
+              <item name="tests" type="462c0819:PsiDirectoryNode" />
               <item name="helpers" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
               <item name="codegen" type="462c0819:PsiDirectoryNode" />
-              <item name="parser-test" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="codegen" type="462c0819:PsiDirectoryNode" />
-              <item name="parser-test" type="462c0819:PsiDirectoryNode" />
-              <item name="old_impl" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="codegen" type="462c0819:PsiDirectoryNode" />
-              <item name="schema-test" type="462c0819:PsiDirectoryNode" />
+              <item name="tests" type="462c0819:PsiDirectoryNode" />
+              <item name="queries" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
@@ -351,61 +387,41 @@
               <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
               <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
               <item name="&lt; Python 3.6 (FletcherFiltering) &gt;" type="70bed36:NamedLibraryElementNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="&lt; Python 3.6 (FletcherFiltering) &gt;" type="70bed36:NamedLibraryElementNode" />
-              <item name="moz-sql-parser" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="&lt; Python 3.6 (FletcherFiltering) &gt;" type="70bed36:NamedLibraryElementNode" />
-              <item name="transpyle" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="&lt; Python 3.6 (FletcherFiltering) &gt;" type="70bed36:NamedLibraryElementNode" />
-              <item name="transpyle" type="462c0819:PsiDirectoryNode" />
-              <item name="transpyle" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="codegen" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="&lt; Python 3.6 (FletcherFiltering) &gt;" type="70bed36:NamedLibraryElementNode" />
-              <item name="transpyle" type="462c0819:PsiDirectoryNode" />
-              <item name="transpyle" type="462c0819:PsiDirectoryNode" />
-              <item name="cpp" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="DatabaseDriversLRU" value="mysql" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/parser-test/codegen/transformations" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-    <property name="settings.editor.selected.configurable" value="preferences.fileTypes" />
+    <property name="settings.editor.selected.configurable" value="coverage" />
+  </component>
+  <component name="PyCoverageOptionsProvider">
+    <option name="myUseBundledCoveragePy" value="true" />
+    <option name="myBranchCoverage" value="true" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/parser-test/old_impl" />
-      <recent name="$PROJECT_DIR$/codegen" />
+      <recent name="$PROJECT_DIR$/tests/queries" />
+      <recent name="$PROJECT_DIR$/tests/queries/test1" />
       <recent name="$PROJECT_DIR$" />
-      <recent name="$PROJECT_DIR$/parser-test/codegen" />
-      <recent name="$PROJECT_DIR$/parser-test/transformations" />
+      <recent name="$PROJECT_DIR$/src/fletcherfiltering" />
+      <recent name="$PROJECT_DIR$/src" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/parser-test/codegen/transformations" />
-      <recent name="$PROJECT_DIR$/parser-test/codegen/transformations/helpers" />
-      <recent name="$PROJECT_DIR$/parser-test/transformations" />
-      <recent name="$PROJECT_DIR$/parser-test" />
+      <recent name="$PROJECT_DIR$/tests/queries" />
+      <recent name="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations" />
+      <recent name="$PROJECT_DIR$/tests/helpers" />
+      <recent name="$PROJECT_DIR$/tests/data_generation" />
+      <recent name="$PROJECT_DIR$/schema-test" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -421,28 +437,6 @@
     </option>
   </component>
   <component name="RunManager" selected="Python.parser_test">
-    <configuration name="codegen_module" type="PythonConfigurationType" factoryName="Python">
-      <module name="codegen" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/parser-test" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="codegen" />
-      <option name="PARAMETERS" value="-i ../schema-test/in_schema.fbs -o ../schema-test/out_schema.fbs &quot;select (16 &gt;&gt; 4) as int1, CONCAT(string1,1&lt;&lt;4,'NULL') as concat, CONCAT('123456',string1,True,False) as concat2 FROM a&quot;" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="true" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="parser_test" type="PythonConfigurationType" factoryName="Python">
       <module name="codegen" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -487,10 +481,26 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="pytest for codegen" type="tests" factoryName="py.test">
+      <module name="codegen" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/FletcherFiltering/bin/python" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;-s --show-progress --print-relative-time --verbose&quot;" />
+      <option name="_new_target" value="&quot;tests&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.schema_test" />
-      <item itemvalue="Python.codegen_module" />
       <item itemvalue="Python.parser_test" />
+      <item itemvalue="Python tests.pytest for codegen" />
     </list>
   </component>
   <component name="SvnConfiguration">
@@ -506,24 +516,60 @@
       <workItem from="1544617801179" duration="18000" />
       <workItem from="1548084623674" duration="17751000" />
       <workItem from="1548343880500" duration="2000" />
-      <workItem from="1548762040816" duration="42268000" />
+      <workItem from="1548762040816" duration="42944000" />
+      <workItem from="1550744947343" duration="5425000" />
+      <workItem from="1550755753023" duration="23388000" />
+      <workItem from="1550953151423" duration="84000" />
+      <workItem from="1551022338956" duration="12325000" />
     </task>
     <servers />
   </component>
+  <component name="TestHistory">
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 18m 59s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 20m 03s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 33m 16s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 34m 58s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 36m 10s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 38m 40s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 18h 41m 38s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 19h 51m 35s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 19h 53m 30s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+    <history-entry file="pytest_for_codegen - 2019.02.24 at 19h 57m 11s.xml">
+      <configuration name="pytest for codegen" configurationId="tests" />
+    </history-entry>
+  </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="60039000" />
+    <option name="totallyTimeSpent" value="109440000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1" y="23" width="1920" height="1007" extended-state="6" />
+    <frame x="0" y="25" width="3840" height="2087" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16666667" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.0968931" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32896176" />
-      <window_info active="true" anchor="bottom" x="0" y="23" width="1680" height="979" id="Run" order="2" sideWeight="0.528083" visible="true" weight="0.29180327" />
-      <window_info anchor="bottom" x="1920" y="23" width="1680" height="1027" id="Debug" order="3" weight="0.3387978" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32882205" />
+      <window_info anchor="bottom" x="0" y="23" width="1680" height="979" id="Run" order="2" sideWeight="0.528083" weight="0.26065162" />
+      <window_info anchor="bottom" x="1920" y="23" width="1680" height="1027" id="Debug" order="3" weight="0.21904762" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -531,39 +577,16 @@
       <window_info anchor="bottom" id="Version Control" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50061053" side_tool="true" weight="0.32834226" />
       <window_info anchor="bottom" id="Database Changes" order="10" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.4993895" weight="0.32715377" />
-      <window_info anchor="bottom" id="Python Console" order="12" weight="0.32896176" />
+      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.4993895" weight="0.3263158" />
+      <window_info anchor="bottom" id="Python Console" order="12" visible="true" weight="0.32882205" />
       <window_info anchor="bottom" id="Inspection Results" order="13" weight="0.32896176" />
+      <window_info anchor="right" id="Coverage" side_tool="true" weight="0.3299105" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Database" order="3" weight="0.32960597" />
       <window_info anchor="right" id="SciView" order="4" weight="0.015974442" />
     </layout>
-    <layout-to-restore>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16666667" />
-      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32953367" />
-      <window_info anchor="bottom" x="0" y="23" width="1680" height="979" id="Run" order="2" sideWeight="0.528083" visible="true" weight="0.29180327" />
-      <window_info anchor="bottom" x="1920" y="23" width="1680" height="1027" id="Debug" order="3" weight="0.3387978" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Version Control" order="8" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50061053" side_tool="true" weight="0.32834226" />
-      <window_info anchor="bottom" id="Database Changes" order="10" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.4993895" weight="0.32715377" />
-      <window_info anchor="bottom" id="Python Console" order="12" weight="0.32896176" />
-      <window_info anchor="bottom" id="Inspection Results" order="13" weight="0.32896176" />
-      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Database" order="3" weight="0.32960597" />
-      <window_info anchor="right" id="SciView" order="4" weight="0.015974442" />
-    </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
@@ -581,11 +604,48 @@
           <line>302</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tests/helpers/base_query.py</url>
+          <line>210</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
+    <watches-manager>
+      <configuration name="tests">
+        <watch expression="sentence" />
+        <watch expression="len(sentence)" language="Python" />
+        <watch expression="StructQueryTest1In" language="Python" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="watch">
+      <expression>
+        <expression-string>StructQueryTest1In</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+      <expression>
+        <expression-string>StructQeuryTest1In</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+      <expression>
+        <expression-string>Struct</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+      <expression>
+        <expression-string>len(sentence)</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
+      <expression>
+        <expression-string>obj.__module__</expression-string>
+        <language-id>Python</language-id>
+        <evaluation-mode>EXPRESSION</evaluation-mode>
+      </expression>
       <expression>
         <expression-string>list(type_list)</expression-string>
         <language-id>Python</language-id>
@@ -611,73 +671,212 @@
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
-      <expression>
-        <expression-string>col.type in self.LENGTH_TYPES</expression-string>
-        <language-id>Python</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
-      <expression>
-        <expression-string>str(col.type)</expression-string>
-        <language-id>Python</language-id>
-        <evaluation-mode>EXPRESSION</evaluation-mode>
-      </expression>
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/sql/__init__.py">
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/CMakeFiles/3.12.4/CMakeCCompiler.cmake">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/python/transformations.py">
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/CMakeFiles/codegen-QueryTest1.dir/CXX.includecache">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/pair/synthetic_ast.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/general/ast_generalizer.py">
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/CMakeFiles/codegen-QueryTest1.dir/build.make">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-174" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/moz_sql_parser/formatting.py" />
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/moz_sql_parser/__init__.py" />
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/moz_sql_parser/sql_parser.py" />
-    <entry file="file://$PROJECT_DIR$/test.ttl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="22" lean-forward="true" selection-start-line="6" selection-start-column="22" selection-end-line="6" selection-end-column="22" />
+        <state relative-caret-position="-11">
+          <caret line="32" column="41" selection-start-line="32" selection-start-column="41" selection-end-line="32" selection-end-column="42" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/python/parser.py">
+    <entry file="file://$PROJECT_DIR$/tests/helpers/mysql_type_mapper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-360" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/sql/parser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="22" column="65" selection-start-line="22" selection-start-column="65" selection-end-line="22" selection-end-column="65" />
+        <state relative-caret-position="225">
+          <caret line="17" column="32" selection-start-line="17" selection-start-column="32" selection-end-line="17" selection-end-column="32" />
           <folding>
-            <element signature="e#23#32#0" expanded="true" />
+            <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/cpp/ast_generalizer.py">
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-131">
-          <caret line="6" column="66" selection-start-line="6" selection-start-column="43" selection-end-line="6" selection-end-column="66" />
+        <state relative-caret-position="30">
+          <caret line="2" column="27" selection-start-line="2" selection-start-column="27" selection-end-line="2" selection-end-column="31" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/c/ast_generalizer.py">
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/QueryTest1.cpp">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/helpers/cstruct_wrapper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="24" column="32" lean-forward="true" selection-start-line="24" selection-start-column="32" selection-end-line="24" selection-end-column="32" />
+        <state relative-caret-position="90">
+          <caret line="6" column="39" lean-forward="true" selection-start-line="6" selection-start-column="10" selection-end-line="6" selection-end-column="39" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../moz-sql-parser/test.py">
+    <entry file="file://$PROJECT_DIR$/tests/helpers/python_class_generator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="21" column="11" selection-start-line="21" selection-start-column="11" selection-end-line="21" selection-end-column="11" />
+          <folding>
+            <element signature="e#0#17#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/pyarrow/compat.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="511">
+          <caret line="139" selection-start-line="139" selection-end-line="139" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser-test/query.cpp" />
+    <entry file="file://$PROJECT_DIR$/parser-test/query_test.cpp" />
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/QueryTest1_test.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="3" column="67" selection-start-line="3" selection-start-column="67" selection-end-line="3" selection-end-column="67" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/flectcherfiltering_test_workspace/QueryTest1/QueryTest1_test.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="21" column="67" selection-start-line="21" selection-start-column="67" selection-end-line="21" selection-end-column="67" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/ctypes/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="915">
+          <caret line="61" selection-start-line="61" selection-end-line="61" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/helpers/ctypes_type_mapper.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="17" selection-start-line="17" selection-end-line="17" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/shutil.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1470">
+          <caret line="103" selection-start-line="103" selection-end-line="103" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/astunparse/unparser.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="885">
+          <caret line="65" selection-start-line="65" selection-end-line="65" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/cpp/unparser.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1096">
+          <caret line="326" column="129" selection-start-line="326" selection-start-column="129" selection-end-line="326" selection-end-column="129" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/pytest_print/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="840">
+          <caret line="62" selection-start-line="62" selection-end-line="62" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/py/_io/terminalwriter.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="503">
+          <caret line="255" selection-start-line="255" selection-end-line="255" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/_pytest/terminal.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="511">
+          <caret line="308" selection-start-line="308" selection-end-line="308" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_compiler.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fletcherfiltering_test_workspace/QueryTest1/CMakeCache.txt">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_settings.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="3" column="24" selection-start-line="3" selection-start-column="24" selection-end-line="3" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/run-pytest.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="205" selection-start-line="4" selection-start-column="181" selection-end-line="4" selection-end-column="205" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/queries/test2/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/queries/test1/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/data_generation/SentenceGenerator.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="9" column="46" selection-start-line="9" selection-start-column="46" selection-end-line="9" selection-end-column="46" />
+          <folding>
+            <element signature="e#0#61#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/conftest.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="14" selection-start-line="14" selection-end-line="14" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/schema-test/schema_test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="23" column="60" lean-forward="true" selection-start-line="11" selection-start-column="4" selection-end-line="23" selection-end-column="60" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/WhereTransform.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="120">
+          <caret line="8" column="10" selection-start-line="8" selection-start-column="10" selection-end-line="8" selection-end-column="10" />
+          <folding>
+            <element signature="e#0#28#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/ConstantPropagationTransform.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
           <folding>
@@ -686,304 +885,149 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2018.3/python_stubs/943088284/_ast3/BinOp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="11" column="8" selection-start-line="11" selection-start-column="8" selection-end-line="11" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser-test/old_impl/example.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" column="18" selection-start-line="1" selection-start-column="18" selection-end-line="1" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/c/parser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-326" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser-test/transformations/TypeTransformation.py" />
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/sql/ast_generalizer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="294">
-          <caret line="28" column="34" selection-start-line="28" selection-start-column="34" selection-end-line="28" selection-end-column="34" />
-          <folding>
-            <element signature="e#31#45#0" expanded="true" />
-            <marker date="1548332511266" expanded="true" signature="821:822" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="341">
-          <caret line="35" column="22" lean-forward="true" selection-start-line="27" selection-start-column="8" selection-end-line="35" selection-end-column="22" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/PyCharm2018.3/python_stubs/943088284/_ast3/AST.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="181">
-          <caret line="19" column="8" selection-start-line="19" selection-start-column="8" selection-end-line="19" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/ast.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="316">
-          <caret line="251" column="25" selection-start-line="251" selection-start-column="18" selection-end-line="251" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/static_typing/unparser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="20" selection-start-line="20" selection-end-line="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/cpp/parser.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/typed_astunparse/printer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="282">
-          <caret line="55" selection-start-line="55" selection-end-line="55" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/cpp/definitions.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/schema-test/schema_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="21" column="55" lean-forward="true" selection-start-line="21" selection-start-column="55" selection-end-line="23" selection-end-column="58" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/typed_ast/ast3.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="248">
-          <caret line="338" selection-start-line="338" selection-end-line="338" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../transpyle/transpyle/cpp/unparser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2491">
-          <caret line="236" column="26" selection-start-line="236" selection-start-column="23" selection-end-line="236" selection-end-column="26" />
-          <folding>
-            <element signature="e#25#35#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/astunparse/unparser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="142">
-          <caret line="643" column="33" lean-forward="true" selection-start-line="643" selection-start-column="33" selection-end-line="643" selection-end-column="33" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../moz-sql-parser/moz_sql_parser/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="36" selection-start-line="36" selection-end-line="36" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../moz-sql-parser/moz_sql_parser/sql_parser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="73">
-          <caret line="123" column="4" selection-start-line="123" selection-start-column="4" selection-end-line="123" selection-end-column="4" />
-          <folding>
-            <element signature="e#272#310#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../moz-sql-parser/moz_sql_parser/ast_nodes.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="214">
-          <caret line="832" selection-start-line="832" selection-end-line="832" />
-          <folding>
-            <element signature="e#0#65#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="1" lean-forward="true" selection-start-line="9" selection-start-column="1" selection-end-line="9" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/__init__.py">
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/ConcatTransform.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="15">
           <caret line="1" selection-start-line="1" selection-end-line="1" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/helpers/FunctionResolver.py">
+    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/typed_ast/ast3.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="191">
-          <caret line="16" column="6" selection-start-line="16" selection-start-column="6" selection-end-line="16" selection-end-column="6" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="511">
+          <caret line="274" selection-start-line="274" selection-end-line="274" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/__init__.py">
+    <entry file="file://$PROJECT_DIR$/tests/queries/test_combination1.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" lean-forward="true" selection-start-line="1" selection-end-line="1" />
+        <state relative-caret-position="45">
+          <caret line="4" column="23" selection-start-line="4" selection-start-column="23" selection-end-line="4" selection-end-column="23" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/helpers/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" selection-start-line="6" selection-end-line="6" />
-          <folding>
-            <element signature="e#53#63#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/WhereTransform.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="19" column="79" selection-start-line="19" selection-start-column="70" selection-end-line="19" selection-end-column="79" />
-          <folding>
-            <element signature="e#0#28#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/BaseTransform.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-41">
-          <caret line="6" column="39" selection-start-line="6" selection-start-column="24" selection-end-line="6" selection-end-column="39" />
-          <folding>
-            <element signature="e#0#28#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/ConstantPropagationTransform.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="65">
-          <caret line="20" column="31" lean-forward="true" selection-start-line="20" selection-start-column="31" selection-end-line="20" selection-end-column="31" />
-          <folding>
-            <element signature="e#0#28#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/PythonASTTransform.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-292">
-          <caret line="448" column="51" selection-start-line="448" selection-start-column="41" selection-end-line="448" selection-end-column="51" />
-          <folding>
-            <element signature="e#0#28#0" expanded="true" />
-            <element signature="e#665#688#0" />
-            <element signature="e#9901#9926#0" />
-            <element signature="e#10738#10766#0" />
-            <element signature="e#11634#11649#0" />
-            <element signature="e#12332#12350#0" />
-            <marker date="1550498962191" expanded="true" signature="12568:14731" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/argparse.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="185">
-          <caret line="1317" column="17" lean-forward="true" selection-start-line="1317" selection-start-column="17" selection-end-line="1317" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda3/envs/FletcherFiltering/lib/python3.6/site-packages/pyparsing.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="193">
-          <caret line="3563" selection-start-line="3563" selection-end-line="3563" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/exceptions/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="19" selection-start-line="9" selection-start-column="6" selection-end-line="9" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/helpers/ArrowTypeResolver.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1365">
-          <caret line="91" column="24" lean-forward="true" selection-start-line="91" selection-start-column="24" selection-end-line="91" selection-end-column="24" />
-          <folding>
-            <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parser-test/__init__.py">
+    <entry file="file://$PROJECT_DIR$/fletcherfiltering_test_workspace/QueryWildcard_test.cpp">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/transformations/ConcatTransform.py">
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/BaseTransform.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-345">
-          <caret line="4" column="20" selection-start-line="4" selection-start-column="20" selection-end-line="4" selection-end-column="20" />
+        <state relative-caret-position="240">
+          <caret line="16" selection-start-line="16" selection-end-line="16" />
+          <folding>
+            <element signature="e#0#28#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/compiler.py">
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/compiler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="97">
-          <caret line="17" column="66" selection-start-line="17" selection-start-column="66" selection-end-line="17" selection-end-column="66" />
+        <state relative-caret-position="987">
+          <caret line="109" column="39" selection-start-line="109" selection-start-column="21" selection-end-line="109" selection-end-column="39" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/WildcardTransform.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="480">
+          <caret line="32" selection-start-line="32" selection-end-line="32" />
+          <folding>
+            <element signature="e#0#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/queries/test_concat.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="4" column="17" selection-start-line="4" selection-start-column="17" selection-end-line="4" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/queries/test_wildcard.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="13" column="26" selection-start-line="13" selection-start-column="26" selection-end-line="15" selection-end-column="69" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser-test/parser_test_module.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="7" column="60" selection-start-line="7" selection-start-column="60" selection-end-line="7" selection-end-column="60" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fletcherfiltering_test_workspace/QueryConcat.cpp">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fletcherfiltering_test_workspace/QueryWildcard.cpp">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/PythonASTTransform.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="693">
+          <caret line="738" selection-start-line="738" selection-end-line="738" />
+          <folding>
+            <element signature="e#0#28#0" expanded="true" />
+            <element signature="e#2284#6509#0" />
+            <element signature="e#6571#10635#0" />
+            <element signature="e#10700#13856#0" />
+            <marker date="1551035222255" expanded="true" signature="23029:25192" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/helpers/base_query.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="610">
+          <caret line="210" selection-start-line="210" selection-end-line="210" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_sqlparse.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_llvm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#28#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="314">
-          <caret line="34" column="139" selection-start-line="34" selection-start-column="21" selection-end-line="34" selection-end-column="139" />
+        <state>
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/parser-test/parser_test_module.py">
+    <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="12" column="45" lean-forward="true" selection-start-line="12" selection-start-column="45" selection-end-line="12" selection-end-column="45" />
+        <state relative-caret-position="904">
+          <caret line="333" column="5" lean-forward="true" selection-start-line="317" selection-start-column="4" selection-end-line="333" selection-end-column="5" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/codegen/__main__.py">
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="451">
-          <caret line="47" column="28" selection-start-line="47" selection-start-column="28" selection-end-line="47" selection-end-column="28" />
-          <folding>
-            <element signature="e#1#31#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="105">
+          <caret line="7" column="17" lean-forward="true" selection-start-line="7" selection-start-column="17" selection-end-line="7" selection-end-column="17" />
         </state>
       </provider>
     </entry>

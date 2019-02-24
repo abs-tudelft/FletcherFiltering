@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+      
+  xtradb-percona:
+    image: percona:8.0
+    container_name: xtradb-percona
+    environment:
+      MYSQL_ROOT_PASSWORD: niAHH5mBbk450IQ22Z8K
+      MYSQL_DATABASE: fletcherfiltering
+      MYSQL_USER: fletcherfiltering
+      MYSQL_PASSWORD: pfUcFN4S9Qq7X6NDBMHk
+    ports:
+      - 3306:3306
+    volumes:
+      # create volumes for use
+      - ./mysql-data:/var/lib/mysql
+      # bind mount my local my.cnf
+      # - $PWD/my.cnf:/etc/my.cnf
+      # SQL scripts
+      #- ./sql-data/ticketassist.sql:/docker-entrypoint-initdb.d/ticketassist.sql
+    command:
+      # Workaround for no my.cnf in image
+      - '--user=mysql'

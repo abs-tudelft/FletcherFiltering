@@ -315,6 +315,24 @@ def expandParamListsWithLengths(params):
             raise ValueError(
                 "Unsupported item in parameter list {}.".format(param))
 
+    Query(
+        [Select(
+            [SelectColumn(
+                ColumnReference(Wildcard())
+            )]
+        ),
+        From([
+            FromSource(TableReference("dual"))
+        ]),
+        Where(
+            CompOp(
+                op=GtOperator(),
+                lhs=ColumnReference("a"),
+                rhs=ColumnReference("b")
+            )
+        )]
+    )
+
     return newlist
 
 

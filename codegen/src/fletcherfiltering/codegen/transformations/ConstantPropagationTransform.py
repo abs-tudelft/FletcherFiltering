@@ -3,7 +3,7 @@ from typing import Union, Tuple
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
-from .. import debug
+from .. import debug, settings
 from ..exceptions import *
 from .helpers import grouped
 

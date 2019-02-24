@@ -82,6 +82,12 @@ class ArrowTypeResolver(object):
             ctx=ast.Load()
         )
 
+    def type_timestamp_s_(self, arrow_type, as_pointer: bool = False):
+        return ast.Name(
+            id="uint64_t"+("*" if as_pointer else ''),
+            ctx=ast.Load()
+        )
+
     def type_timestamp_ms_(self, arrow_type, as_pointer: bool = False):
         return ast.Name(
             id="uint64_t"+("*" if as_pointer else ''),

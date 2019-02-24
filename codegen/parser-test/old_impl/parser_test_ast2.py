@@ -10,10 +10,10 @@ from moz_sql_parser import ast_nodes
 
 import transpyle
 
-from codegen.transformations.WhereTransform import WhereTransform
-from codegen.transformations.ConcatTransform import ConcatTransform
-from codegen.transformations.ConstantPropagationTransform import ConstantPropagationTransform
-from codegen.transformations.PythonASTTransform import PythonASTTransform
+from fletcherfiltering.codegen.transformations.WhereTransform import WhereTransform
+from fletcherfiltering.codegen.transformations.ConcatTransform import ConcatTransform
+from fletcherfiltering.codegen.transformations.ConstantPropagationTransform import ConstantPropagationTransform
+from fletcherfiltering.codegen.transformations.PythonASTTransform import PythonASTTransform
 
 STRING_LEN = 255
 

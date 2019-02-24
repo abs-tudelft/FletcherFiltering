@@ -1,13 +1,18 @@
 import pyarrow as pa
 
-from codegen.compiler import Compiler
+from fletcherfiltering.codegen.compiler import Compiler
 
 if __name__ == "__main__":
-    in_schema = pa.read_schema("../schema-test/in_schema.fbs")
-    out_schema = pa.read_schema("../schema-test/out_schema.fbs")
+    in_schema = pa.schema([('id', pa.int32(), False),
+                           ('string1', pa.string(), False),
+                           ('string2', pa.string(), False)])
+
+    out_schema = pa.schema([('id', pa.int32(), False),
+                            ('string1', pa.string(), False),
+                            ('string2', pa.string(), False)])
 
     compiler = Compiler(in_schema, out_schema)
 
-    compiler(query_str="select int1+int2 as int1, CONCAT(string1,1<<4,'NULL') as concat, CONCAT('123456',string1,True,False) as concat2 FROM a WHERE int1 > 4 AND int2 < 18",
+    compiler(query_str="select a.* from a",
              query_name="query",
-             output_dir="../../codegen-cpp/")
+             output_dir="../../codegen-cpp/", include_build_system=False)

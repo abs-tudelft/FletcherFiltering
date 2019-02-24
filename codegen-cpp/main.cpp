@@ -1,52 +1,40 @@
 #include <iostream>
 #include "fletcherfiltering.h"
-#include "query.h"
+#include "query_test.h"
 
 int main() {
 
-    in_schema in;
-    out_schema out;
+    in_schema_test in;
+    out_schema_test out;
 
-    int id = 1;
-    int int1 = 2347645;
-    int int2 = 123325;
-    int string1_len = 11;
-    char string1[STRING_SIZE] = "abcdefghijk";
-    unsigned long long timestamp1 = 1544620718000ul;
+    in.id = 1;
+    in.string1 = "abcdefghijk, sdoifghdsfgsbfgshdfbsifgb8sdfjsdif sbf sdbfis df bsdjns kdfs fisbd fjsodnfisnf sbdif sd bsbg";
+    in.string2 = "abcdefghijk, sdoifghdsfgsbfgshdfbsifgb8sdfjsdif haohgw8y245bhwe9y713rbi2 25 ghu924y24tbj24t stfgswr tgwerw4t wrt2 45rt2 45625";
 
 
-    in.id.write(id);
-    in.int1.write(int1);
-    in.int2.write(int2);
-    in.string1_len.write(string1_len);
-    for(int i = 0; i<string1_len; i++) {
-        in.string1.write(string1[i]);
-    }
-    in.timestamp1.write(timestamp1);
+    std::cout << "Input:" << std::endl;
+    std::cout << "id: " << in.id << std::endl;
+    std::cout << "string1 (" << strlen(in.string1) << "): " << in.string1 << std::endl;
+    std::cout << "string2 (" << strlen(in.string2) << "): " << in.string2 << std::endl;
 
-    query(in,out);
 
-    if(!out.int1.empty()) {
-        int int1_o = out.int1.read();
-        int concat_o_len = out.concat_len.read();
-        char concat_o[STRING_SIZE];
-        for (int i = 0; i < concat_o_len; i++)
-            concat_o[i] = out.concat.read();
+    out.string1 = (char*)malloc(sizeof(char)*256);
+    out.string2 = (char*)malloc(sizeof(char)*256);
 
-        concat_o[concat_o_len] = '\0';
+    bool matched = query_test(in, out);
 
-        int concat2_o_len = out.concat2_len.read();
-        char concat2_o[STRING_SIZE];
-        for (int i = 0; i < concat2_o_len; i++)
-            concat2_o[i] = out.concat2.read();
 
-        concat2_o[concat2_o_len] = '\0';
-
-        std::cout << "int1: " << int1_o << std::endl;
-        std::cout << "concat (" << concat_o_len << "): " << concat_o << std::endl;
-        std::cout << "concat2 (" << concat2_o_len << "): " << concat2_o << std::endl;
+    if(matched) {
+        std::cout << "Output:" << std::endl;
+        std::cout << "id: " << out.id << std::endl;
+        std::cout << "string1 (" << strlen(out.string1) << "): " << out.string1 << std::endl;
+        std::cout << "string2 (" << strlen(out.string2) << "): " << out.string2 << std::endl;
     } else {
         std::cout << "Record didn't match." << std::endl;
     }
+
+    free(out.string1);
+    free(out.string2);
+
     return 0;
 }

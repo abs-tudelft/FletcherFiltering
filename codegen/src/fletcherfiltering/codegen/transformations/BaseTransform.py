@@ -2,18 +2,9 @@ import typed_ast.ast3 as ast
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .. import debug
-
+from .. import settings
 
 class BaseTransform(ast.NodeTransformer):
-
-#region Constants
-    VAR_LENGTH_TYPES = [pa.string()]
-    VAR_LENGTH = 255
-    LENGTH_POSTFIX = '_len'
-    OUTPUT_POSTFIX = '_o'
-    LENGTH_TYPE = pa.int32()
-
-#endregion
 
     def __init__(self):
         super().__init__()
