@@ -9,54 +9,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="999d825e-9225-4f8f-87b5-8b12af73193c" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements-test.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/setup.cfg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/fletcherfiltering/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/fletcherfiltering/settings.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/data_generation/BaseGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/data_generation/IntGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/data_generation/SentenceGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/data_generation/UIntGenerator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/data_generation/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/helpers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/helpers/base_query.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/helpers/cstruct_wrapper.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/helpers/ctypes_type_mapper.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/helpers/mysql_type_mapper.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/helpers/python_class_generator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/queries/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/queries/test_combination1.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/queries/test_concat.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/queries/test_wildcard.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_compiler.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../codegen-cpp/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../codegen-cpp/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../codegen-cpp/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../codegen-cpp/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codegen.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codegen.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/__main__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/compiler.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/exceptions/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/BaseTransform.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/ConcatTransform.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/fletcherfiltering/codegen/transformations/WildcardTransform.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/ConstantPropagationTransform.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/PythonASTTransform.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/WhereTransform.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/helpers/ArrowTypeResolver.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/helpers/FunctionResolver.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/codegen/transformations/helpers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/old_impl/parser_test_ast2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parser-test/parser_test_module.py" beforeDir="false" afterPath="$PROJECT_DIR$/parser-test/parser_test_module.py" afterDir="false" />
-    </list>
+    <list default="true" id="999d825e-9225-4f8f-87b5-8b12af73193c" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +69,7 @@
         <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="904">
-              <caret line="333" column="5" lean-forward="true" selection-start-line="317" selection-start-column="4" selection-end-line="333" selection-end-column="5" />
+              <caret line="333" column="5" selection-start-line="317" selection-start-column="4" selection-end-line="333" selection-end-column="5" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -128,7 +81,7 @@
         <entry file="file://$PROJECT_DIR$/requirements.txt">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="105">
-              <caret line="7" column="17" lean-forward="true" selection-start-line="7" selection-start-column="17" selection-end-line="7" selection-end-column="17" />
+              <caret line="7" column="17" selection-start-line="7" selection-start-column="17" selection-end-line="7" selection-end-column="17" />
             </state>
           </provider>
         </entry>
@@ -307,8 +260,8 @@
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
     <option name="y" value="23" />
-    <option name="width" value="3840" />
-    <option name="height" value="2087" />
+    <option name="width" value="1680" />
+    <option name="height" value="1007" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -520,7 +473,7 @@
       <workItem from="1550744947343" duration="5425000" />
       <workItem from="1550755753023" duration="23388000" />
       <workItem from="1550953151423" duration="84000" />
-      <workItem from="1551022338956" duration="12325000" />
+      <workItem from="1551022338956" duration="12567000" />
     </task>
     <servers />
   </component>
@@ -557,13 +510,13 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="109440000" />
+    <option name="totallyTimeSpent" value="109682000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="25" width="3840" height="2087" extended-state="6" />
+    <frame x="0" y="23" width="1920" height="1007" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.0968931" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.19595315" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -578,7 +531,7 @@
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50061053" side_tool="true" weight="0.32834226" />
       <window_info anchor="bottom" id="Database Changes" order="10" show_stripe_button="false" />
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.4993895" weight="0.3263158" />
-      <window_info anchor="bottom" id="Python Console" order="12" visible="true" weight="0.32882205" />
+      <window_info anchor="bottom" id="Python Console" order="12" visible="true" weight="0.71693987" />
       <window_info anchor="bottom" id="Inspection Results" order="13" weight="0.32896176" />
       <window_info anchor="right" id="Coverage" side_tool="true" weight="0.3299105" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -1017,7 +970,7 @@
     <entry file="file://$PROJECT_DIR$/parser-test/old_impl/parser_test_ast.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="904">
-          <caret line="333" column="5" lean-forward="true" selection-start-line="317" selection-start-column="4" selection-end-line="333" selection-end-column="5" />
+          <caret line="333" column="5" selection-start-line="317" selection-start-column="4" selection-end-line="333" selection-end-column="5" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>
@@ -1027,7 +980,7 @@
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="105">
-          <caret line="7" column="17" lean-forward="true" selection-start-line="7" selection-start-column="17" selection-end-line="7" selection-end-column="17" />
+          <caret line="7" column="17" selection-start-line="7" selection-start-column="17" selection-end-line="7" selection-end-column="17" />
         </state>
       </provider>
     </entry>
