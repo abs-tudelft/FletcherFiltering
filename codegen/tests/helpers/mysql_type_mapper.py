@@ -13,7 +13,7 @@ class MySQLTypeMapper(object):
         """Dispatch method"""
         method_name = self.make_method_name(arrow_type)
         # Get the method from 'self'. Default to a lambda.
-        method = getattr(self, method_name, lambda: "unknown_type")
+        method = getattr(self, method_name, self.unknown_type)
         # Call the method as we return it
         return method(arrow_type)
 
@@ -54,6 +54,16 @@ class MySQLTypeMapper(object):
 
     def type_string(self, arrow_type):
         return "VARCHAR(255)"
+
+    # TODO: Maybe replace with the correct decimal column
+    def type_halffloat(self, arrow_type):
+        return "FLOAT"
+
+    def type_float(self, arrow_type):
+        return "FLOAT"
+
+    def type_double(self, arrow_type):
+        return "DOUBLE"
 
     def unknown_type(self, arrow_type):
         raise NotImplementedError('{} cannot be processed'.format(arrow_type))

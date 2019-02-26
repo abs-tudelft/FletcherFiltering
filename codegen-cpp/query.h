@@ -1,5 +1,6 @@
 #pragma once
 #include "hls_stream.h"
+#include "hls_half.h"
 #include "fletcherfiltering.h" 
 
 

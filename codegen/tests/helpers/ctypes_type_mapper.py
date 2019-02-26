@@ -13,7 +13,7 @@ class CTypesTypeMapper(object):
         """Dispatch method"""
         method_name = self.make_method_name(arrow_type)
         # Get the method from 'self'. Default to a lambda.
-        method = getattr(self, method_name, lambda: "unknown_type")
+        method = getattr(self, method_name, self.unknown_type)
         # Call the method as we return it
         return method(arrow_type)
 

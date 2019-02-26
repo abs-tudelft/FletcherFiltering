@@ -23,6 +23,7 @@ from .transformations.PythonASTTransform import PythonASTTransform
 # These templates are all formatted, so double up curly braces.
 source_header_header = """#pragma once
 #include "hls_stream.h"
+#include "hls_half.h"
 #include "fletcherfiltering.h" """
 
 source_code_header = """#include "{}.h" """
@@ -62,7 +63,7 @@ class Compiler(object):
                 raise ValueError("Nullable columns in the output schema are not supported at this time.")
 
     def __call__(self, query_str: str, output_dir: str = '.', query_name: str = 'query',
-                 include_build_system: bool = True):
+                 include_build_system: bool = True, extra_include_dirs: str = ''):
         assert isinstance(query_str, str)
 
         queries = self.parse(query_str)
@@ -83,13 +84,14 @@ class Compiler(object):
             source_dir = os.path.realpath(
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../codegen-cpp'))
 
-            self.copy_files(source_dir, os.path.realpath(output_dir), ['fletcherfiltering.cpp', 'fletcherfiltering.h', 'hls_stream.h'])
+            self.copy_files(source_dir, os.path.realpath(output_dir), ['fletcherfiltering.cpp', 'fletcherfiltering.h'])
 
             cmake_list = "cmake_minimum_required(VERSION 3.12)\n" \
-                         "project(codegen_cpp)\n" \
+                         "project(codegen-{0})\n" \
                          "set(CMAKE_CXX_STANDARD 14)\n" \
-                         "add_library(codegen-{} SHARED fletcherfiltering.cpp {})\n" \
-                         "".format(query_name, " ".join(generated_files))
+                         "include_directories(AFTER SYSTEM {2})\n" \
+                         "add_library(codegen-{0} SHARED fletcherfiltering.cpp {1})\n" \
+                         "".format(query_name, " ".join(generated_files), extra_include_dirs)
 
             with open(os.path.join(output_dir, 'CMakeLists.txt'), 'w') as cmake_file:
                 cmake_file.write(cmake_list)

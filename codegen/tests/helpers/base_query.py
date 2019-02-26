@@ -10,6 +10,7 @@ from fletcherfiltering import settings
 from ..data_generation.SentenceGenerator import SentenceGenerator
 from ..data_generation.UIntGenerator import UIntGenerator
 from ..data_generation.IntGenerator import IntGenerator
+from ..data_generation.FloatGenerator import FloatGenerator
 
 from .mysql_type_mapper import MySQLTypeMapper
 from .ctypes_type_mapper import CTypesTypeMapper
@@ -90,6 +91,7 @@ class BaseQuery:
         str_gen = SentenceGenerator()
         uint_gen = UIntGenerator()
         int_gen = IntGenerator()
+        float_gen = FloatGenerator()
         self.data.clear()
         for i in range(test_settings.DEFAULT_DATA_SIZE):
             record = {}
@@ -122,6 +124,12 @@ class BaseQuery:
                         record[col.name] = uint_gen.generate(64)
                     elif col.type == pa.timestamp('ms'):
                         record[col.name] = uint_gen.generate(64)
+                    elif col.type == pa.float16():
+                        record[col.name] = float_gen.generate(16)
+                    elif col.type == pa.float32():
+                        record[col.name] = float_gen.generate(32)
+                    elif col.type == pa.float64():
+                        record[col.name] = float_gen.generate(64)
                     else:
                         pytest.fail("Unsupported column type {} for {}".format(col.type, col.name))
             self.data.append(record)
@@ -150,11 +158,12 @@ class BaseQuery:
         self.printer("Compiling SQL to HLS C++...")
         compiler = Compiler(self.in_schema, self.out_schema)
 
-        compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir)
+        compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
+                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH)
 
         with open(os.devnull, "w") as f:
             redir = f
-            if self.swallow_build_output:
+            if not self.swallow_build_output:
                 redir = None
 
             self.printer("Running CMake Generate...")
@@ -195,7 +204,8 @@ class BaseQuery:
             for col in self.in_schema:
                 if col.type == pa.string():
                     setattr(in_schema, col.name,
-                            ctypes.cast(ctypes.create_string_buffer(data_item[col.name].encode('ascii', 'replace'),size=settings.VAR_LENGTH),
+                            ctypes.cast(ctypes.create_string_buffer(data_item[col.name].encode('ascii', 'replace'),
+                                                                    size=settings.VAR_LENGTH),
                                         ctypes.c_char_p))
                 else:
                     setattr(in_schema, col.name, data_item[col.name])

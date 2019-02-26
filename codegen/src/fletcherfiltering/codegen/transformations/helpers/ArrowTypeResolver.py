@@ -13,7 +13,7 @@ class ArrowTypeResolver(object):
         """Dispatch method"""
         method_name = self.make_method_name(arrow_type)
         # Get the method from 'self'. Default to a lambda.
-        method = getattr(self, method_name, lambda: "unknown_type")
+        method = getattr(self, method_name, self.unknown_type)
         # Call the method as we return it
         if as_stream:
             return self.wrap_in_stream(method(arrow_type, as_pointer))
@@ -97,6 +97,24 @@ class ArrowTypeResolver(object):
     def type_string(self, arrow_type, as_pointer: bool = False):
         return ast.Name(
             id="char"+("*" if as_pointer else ''),
+            ctx=ast.Load()
+        )
+
+    def type_halffloat(self, arrow_type, as_pointer: bool = False):
+        return ast.Name(
+            id="half"+("*" if as_pointer else ''),
+            ctx=ast.Load()
+        )
+
+    def type_float(self, arrow_type, as_pointer: bool = False):
+        return ast.Name(
+            id="float"+("*" if as_pointer else ''),
+            ctx=ast.Load()
+        )
+
+    def type_double(self, arrow_type, as_pointer: bool = False):
+        return ast.Name(
+            id="double"+("*" if as_pointer else ''),
             ctx=ast.Load()
         )
 
