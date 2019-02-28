@@ -26,10 +26,12 @@ import ctypes
 import copy
 import pytest
 import sys
+import platform
+import struct
 
 
 class BaseQuery:
-    def __init__(self, printer, cnx, working_dir_base, name='query', has_data_file=False, seperate_work_dir=False,
+    def __init__(self, printer, cnx, working_dir_base, name='query', has_data_file=False, separate_work_dir=False,
                  clean_workdir=False):
         self.printer = printer
         self.cnx = cnx
@@ -45,7 +47,7 @@ class BaseQuery:
         self.query = None
         self.clean_workdir = clean_workdir
         self.swallow_build_output = False
-        if seperate_work_dir:
+        if separate_work_dir:
             self.working_dir = os.path.join(working_dir_base, test_settings.WORKSPACE_NAME, self.name)
         else:
             self.working_dir = os.path.join(working_dir_base, test_settings.WORKSPACE_NAME)
@@ -159,7 +161,7 @@ class BaseQuery:
         compiler = Compiler(self.in_schema, self.out_schema)
 
         compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
-                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH)
+                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH, extra_link_libraries=test_settings.HLS_LIBS)
 
         with open(os.devnull, "w") as f:
             redir = f
@@ -171,7 +173,7 @@ class BaseQuery:
                                                                           test_settings.BUILD_CONFIG), shell=True,
                            check=True, cwd=self.working_dir, stdout=redir)
             self.printer("Running CMake Build...")
-            subprocess.run("cmake --build .", shell=True, check=True, cwd=self.working_dir, stdout=redir)
+            subprocess.run("cmake --build . --config {}".format(test_settings.BUILD_CONFIG), shell=True, check=True, cwd=self.working_dir, stdout=redir)
 
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
@@ -187,7 +189,12 @@ class BaseQuery:
 
         out_schema_type = self.build_schema_class(self.out_schema, 'Out')
 
-        lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.dylib'.format(self.name)))
+        if platform.system() == 'darwin':
+            lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.dylib'.format(self.name)))
+        elif platform.system() == 'Windows':
+            lib = ctypes.WinDLL(os.path.join(self.working_dir, test_settings.BUILD_CONFIG, 'codegen-{}.dll'.format(self.name)))
+        else:
+            lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.so'.format(self.name)))
         fletcherfiltering_test = lib.__getattr__(self.name + settings.TEST_SUFFIX)
         fletcherfiltering_test.restype = ctypes.c_bool
         fletcherfiltering_test.argtypes = [ctypes.POINTER(in_schema_type), ctypes.POINTER(out_schema_type)]
@@ -207,6 +214,9 @@ class BaseQuery:
                             ctypes.cast(ctypes.create_string_buffer(data_item[col.name].encode('ascii', 'replace'),
                                                                     size=settings.VAR_LENGTH),
                                         ctypes.c_char_p))
+                elif col.type == pa.float16():
+                    # Pack the halffloat and unpack it as a short.
+                    setattr(in_schema, col.name, struct.unpack('h',struct.pack('e', data_item[col.name]))[0])
                 else:
                     setattr(in_schema, col.name, data_item[col.name])
             passed = fletcherfiltering_test(ctypes.byref(in_schema), ctypes.byref(out_schema))
@@ -219,6 +229,9 @@ class BaseQuery:
                             out_data[col.name] = copy.copy(getattr(out_schema, col.name)).decode('ascii')
                         except UnicodeDecodeError:
                             print(getattr(out_schema, col.name))
+                    elif col.type == pa.float16():
+                        # unpack the data as a short and the unpack that as a halffloat
+                        out_data[col.name] = struct.unpack('e', struct.pack('h', copy.copy(getattr(out_schema, col.name))))[0]
                     else:
                         out_data[col.name] = copy.copy(getattr(out_schema, col.name))
                 result_data.append(out_data)

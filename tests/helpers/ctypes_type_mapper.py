@@ -55,5 +55,14 @@ class CTypesTypeMapper(object):
     def type_string(self, arrow_type):
         return ctypes.c_char_p
 
+    def type_halffloat(self, arrow_type):
+        return ctypes.c_short
+
+    def type_float(self, arrow_type):
+        return ctypes.c_float
+
+    def type_double(self, arrow_type):
+        return ctypes.c_double
+
     def unknown_type(self, arrow_type):
         raise NotImplementedError('{} cannot be processed'.format(arrow_type))

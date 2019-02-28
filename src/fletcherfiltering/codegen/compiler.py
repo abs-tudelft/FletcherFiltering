@@ -22,6 +22,9 @@ from .transformations.PythonASTTransform import PythonASTTransform
 
 # These templates are all formatted, so double up curly braces.
 source_header_header = """#pragma once
+#if _MSC_VER && !__INTEL_COMPILER
+    #include <iso646.h>
+#endif
 #include "hls_stream.h"
 #include "hls_half.h"
 #include "fletcherfiltering.h" """
@@ -63,7 +66,8 @@ class Compiler(object):
                 raise ValueError("Nullable columns in the output schema are not supported at this time.")
 
     def __call__(self, query_str: str, output_dir: str = '.', query_name: str = 'query',
-                 include_build_system: bool = True, extra_include_dirs: str = ''):
+                 include_build_system: bool = True, extra_include_dirs: str = '', extra_link_dirs: str = '',
+                 extra_link_libraries: str = ''):
         assert isinstance(query_str, str)
 
         queries = self.parse(query_str)
@@ -90,8 +94,12 @@ class Compiler(object):
                          "project(codegen-{0})\n" \
                          "set(CMAKE_CXX_STANDARD 14)\n" \
                          "include_directories(AFTER SYSTEM {2})\n" \
+                         "link_directories(AFTER SYSTEM {3})\n" \
                          "add_library(codegen-{0} SHARED fletcherfiltering.cpp {1})\n" \
-                         "".format(query_name, " ".join(generated_files), extra_include_dirs)
+                         "set_target_properties(codegen-{0} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS true)\n" \
+                         "target_link_libraries(codegen-{0} {4})\n" \
+                         "".format(query_name, " ".join(generated_files), extra_include_dirs, extra_link_dirs,
+                                   extra_link_libraries)
 
             with open(os.path.join(output_dir, 'CMakeLists.txt'), 'w') as cmake_file:
                 cmake_file.write(cmake_list)
