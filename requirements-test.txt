@@ -1,0 +1,7 @@
+pytest
+pytest-runner
+pytest-cov
+pytest-print
+pytest-progress
+mysql-connector-python
+lipsum

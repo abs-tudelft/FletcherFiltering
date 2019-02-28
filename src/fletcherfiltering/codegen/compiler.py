@@ -82,7 +82,7 @@ class Compiler(object):
 
         if include_build_system:
             source_dir = os.path.realpath(
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../codegen-cpp'))
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../codegen-cpp'))
 
             self.copy_files(source_dir, os.path.realpath(output_dir), ['fletcherfiltering.cpp', 'fletcherfiltering.h'])
 

@@ -3,6 +3,7 @@ typed-ast
 pandas
 pyarrow
 numpy
+horast
 astunparse
 typed-astunparse
 #transpyle[c,cpp]
