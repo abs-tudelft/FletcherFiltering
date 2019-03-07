@@ -67,7 +67,7 @@ class Compiler(object):
 
     def __call__(self, query_str: str, output_dir: str = '.', query_name: str = 'query',
                  include_build_system: bool = True, extra_include_dirs: str = '', extra_link_dirs: str = '',
-                 extra_link_libraries: str = ''):
+                 extra_link_libraries: str = '', part_name: str = 'xa7a12tcsg325-1q'):
         assert isinstance(query_str, str)
 
         queries = self.parse(query_str)
@@ -103,6 +103,31 @@ class Compiler(object):
 
             with open(os.path.join(output_dir, 'CMakeLists.txt'), 'w') as cmake_file:
                 cmake_file.write(cmake_list)
+
+            hls_tcl = "############################################################" \
+                      "## This file is generated automatically by FletcherFiltering." \
+                      "############################################################" \
+                      "open_project {0}" \
+                      "set_top {0}" \
+                      "add_files {0}.cpp" \
+                      "add_files {0}.h" \
+                      "add_files fletcherfiltering.cpp" \
+                      "add_files fletcherfiltering.h" \
+                      "add_files -tb {0}{1}.cpp" \
+                      "add_files -tb {0}{1}.h" \
+                      "add_files -tb tb.cpp" \
+                      "open_solution \"solution1\"" \
+                      "set_part {{{2}}}" \
+                      "create_clock -period 10 -name default" \
+                      "#source \"./test/solution1/directives.tcl\"" \
+                      "csim_design -O" \
+                      "csynth_design" \
+                      "cosim_design -trace_level all -rtl vhdl" \
+                      "#export_design -format ip_catalog" \
+                      "".format(query_name, settings.TEST_SUFFIX, part_name)
+
+            with open(os.path.join(output_dir, 'run_complete_hls.tcl'), 'w') as hls_tcl_file:
+                hls_tcl_file.write(hls_tcl)
 
     def copy_files(self, source_dir, output_dir, file_list):
         if source_dir == output_dir:

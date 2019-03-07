@@ -161,7 +161,8 @@ class BaseQuery:
         compiler = Compiler(self.in_schema, self.out_schema)
 
         compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
-                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH, extra_link_libraries=test_settings.HLS_LIBS)
+                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH,
+                 extra_link_libraries=test_settings.HLS_LIBS)
 
         with open(os.devnull, "w") as f:
             redir = f
@@ -173,7 +174,8 @@ class BaseQuery:
                                                                           test_settings.BUILD_CONFIG), shell=True,
                            check=True, cwd=self.working_dir, stdout=redir)
             self.printer("Running CMake Build...")
-            subprocess.run("cmake --build . --config {}".format(test_settings.BUILD_CONFIG), shell=True, check=True, cwd=self.working_dir, stdout=redir)
+            subprocess.run("cmake --build . --config {}".format(test_settings.BUILD_CONFIG), shell=True, check=True,
+                           cwd=self.working_dir, stdout=redir)
 
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
@@ -192,7 +194,8 @@ class BaseQuery:
         if platform.system() == 'darwin':
             lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.dylib'.format(self.name)))
         elif platform.system() == 'Windows':
-            lib = ctypes.WinDLL(os.path.join(self.working_dir, test_settings.BUILD_CONFIG, 'codegen-{}.dll'.format(self.name)))
+            lib = ctypes.WinDLL(
+                os.path.join(self.working_dir, test_settings.BUILD_CONFIG, 'codegen-{}.dll'.format(self.name)))
         else:
             lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.so'.format(self.name)))
         fletcherfiltering_test = lib.__getattr__(self.name + settings.TEST_SUFFIX)
@@ -216,7 +219,7 @@ class BaseQuery:
                                         ctypes.c_char_p))
                 elif col.type == pa.float16():
                     # Pack the halffloat and unpack it as a short.
-                    setattr(in_schema, col.name, struct.unpack('h',struct.pack('e', data_item[col.name]))[0])
+                    setattr(in_schema, col.name, struct.unpack('h', struct.pack('e', data_item[col.name]))[0])
                 else:
                     setattr(in_schema, col.name, data_item[col.name])
             passed = fletcherfiltering_test(ctypes.byref(in_schema), ctypes.byref(out_schema))
@@ -231,12 +234,31 @@ class BaseQuery:
                             print(getattr(out_schema, col.name))
                     elif col.type == pa.float16():
                         # unpack the data as a short and the unpack that as a halffloat
-                        out_data[col.name] = struct.unpack('e', struct.pack('h', copy.copy(getattr(out_schema, col.name))))[0]
+                        out_data[col.name] = \
+                        struct.unpack('e', struct.pack('h', copy.copy(getattr(out_schema, col.name))))[0]
                     else:
                         out_data[col.name] = copy.copy(getattr(out_schema, col.name))
                 result_data.append(out_data)
 
         return result_data
+
+    def run_vivado(self):
+        if test_settings.VIVADO_BIN_DIR == '':
+            pytest.fail("No Vivado install configured.")
+
+        vivado_env = {
+            'PATH': test_settings.VIVADO_BIN_DIR
+        }
+        with open(os.devnull, "w") as f:
+            redir = f
+            if not self.swallow_build_output:
+                redir = None
+            subprocess.run("vivado_hls -f run_complete_hls.tcl", shell=True, check=True, cwd=self.working_dir,
+                           stdout=redir, env={**os.environ, **vivado_env})
+
+        #TODO read output file transactions
+
+        return []
 
     def run_sql(self):
 
@@ -255,6 +277,8 @@ class BaseQuery:
         sql_data = self.run_sql()
         self.printer("Executing query on FletcherFiltering...")
         fletcher_data = self.run_fletcherfiltering()
+        self.printer("Executing query on Vivado XSIM...")
+        vivado_data = self.run_vivado()
 
         self.printer("Verifying the returned data...")
 
@@ -266,6 +290,16 @@ class BaseQuery:
                 "FlechterFiltering let too few records through {} vs {}".format(len(fletcher_data), len(sql_data)))
         else:
             for record_set in zip(sql_data, fletcher_data):
+                assert record_set[0] == record_set[1]
+
+        if len(vivado_data) > len(sql_data):
+            pytest.fail(
+                "Vivado XSIM let too many records through {} vs {}".format(len(vivado_data), len(sql_data)))
+        elif len(vivado_data) < len(sql_data):
+            pytest.fail(
+                "Vivado XSIM let too few records through {} vs {}".format(len(vivado_data), len(sql_data)))
+        else:
+            for record_set in zip(sql_data, vivado_data):
                 assert record_set[0] == record_set[1]
         return True
 
