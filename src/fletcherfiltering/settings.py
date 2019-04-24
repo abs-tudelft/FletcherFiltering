@@ -9,5 +9,7 @@ VAR_LENGTH = 255
 PASS_VAR_NAME = '__pass_record'
 LENGTH_SUFFIX = '_len'
 TEST_SUFFIX = '_test'
+DATA_SUFFIX = '_data'
+TESTBENCH_SUFFIX = '_tb'
 OUTPUT_SUFFIX = '_o'
 LENGTH_TYPE = pa.int32()

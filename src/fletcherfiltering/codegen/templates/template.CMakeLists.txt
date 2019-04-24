@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.12)
+project(codegen-${query_name})
+set(CMAKE_CXX_STANDARD 14)
+include_directories(AFTER SYSTEM ${extra_include_dirs})
+link_directories(AFTER SYSTEM ${extra_link_dirs})
+add_library(codegen-${query_name} SHARED fletcherfiltering.cpp ${generated_files})
+set_target_properties(codegen-${query_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS true)
+target_link_libraries(codegen-${query_name} ${extra_link_libraries})

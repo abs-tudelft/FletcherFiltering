@@ -38,7 +38,10 @@ class ConcatTransform(BaseTransform):
 
     def param_DoubleValue(self, node: ast_nodes.DoubleValue) -> list:
         debug(node)
-        value = str(node.value)
+        if int(node.value) == node.value:
+            value = str(int(node.value))
+        else:
+            value = str(node.value)
         return [ast_nodes.StringValue(value=value), ast_nodes.IntValue(value=len(value))]
 
     def param_ColumnReference(self, node: ast_nodes.ColumnReference) -> list:

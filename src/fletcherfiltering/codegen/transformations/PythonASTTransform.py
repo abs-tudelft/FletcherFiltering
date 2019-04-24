@@ -25,7 +25,7 @@ class PythonASTTransform(BaseTransform):
 
     # region Schema Helpers
 
-    def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema", test_data=False) -> ast.Expr:
+    def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema", test_data=False, is_input=False) -> ast.Expr:
         schema_ast = []
         for col in schema:
             col_def = ast.AnnAssign(
@@ -33,7 +33,8 @@ class PythonASTTransform(BaseTransform):
                     id=col.name,
                     ctx=ast.Store()),
                 annotation=self.type_resolver.resolve(arrow_type=col.type, as_stream=not test_data,
-                                                      as_pointer=(test_data and col.type in settings.VAR_LENGTH_TYPES)),
+                                                      as_pointer=(test_data and col.type in settings.VAR_LENGTH_TYPES),
+                                                      as_const=col.type == pa.string() and test_data and is_input),
                 value=None,
                 simple=1)
             schema_ast.append(col_def)
@@ -151,11 +152,11 @@ class PythonASTTransform(BaseTransform):
                     value=ast.Name(
                         id='in_data',
                         ctx=ast.Load()),
-                    attr=col.name + "_len",
+                    attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Load()),
                 op=ast.RShift(),
                 right=ast.Name(
-                    id=col.name + "_len",
+                    id=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Store()),
                 type_comment=None))
 
@@ -259,7 +260,7 @@ class PythonASTTransform(BaseTransform):
                     value=ast.Name(
                         id='in_data',
                         ctx=ast.Load()),
-                    attr=col.name + "_len",
+                    attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Load()),
                 op=ast.LShift(),
                 right=ast.Name(
@@ -485,12 +486,12 @@ class PythonASTTransform(BaseTransform):
 
     def get_in_schema_ast(self, test_data=False) -> ast.Expr:
         return self.get_schema_ast(self.in_schema, "in_schema" if not test_data else "in_schema" + settings.TEST_SUFFIX,
-                                   test_data)
+                                   test_data, True)
 
     def get_out_schema_ast(self, test_data=False) -> ast.Expr:
         return self.get_schema_ast(self.out_schema,
                                    "out_schema" if not test_data else "out_schema" + settings.TEST_SUFFIX,
-                                   test_data)
+                                   test_data, False)
 
     def get_input_ast(self) -> list:
         return self.get_load_schema_ast(self.in_schema)

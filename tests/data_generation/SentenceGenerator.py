@@ -2,7 +2,6 @@ from tests.data_generation.BaseGenerator import BaseGenerator
 import lipsum
 from fletcherfiltering import settings
 import math
-import os.path
 
 class SentenceGenerator(BaseGenerator):
 

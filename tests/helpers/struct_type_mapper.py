@@ -3,7 +3,7 @@ import pyarrow as pa
 import ctypes
 
 
-class CTypesTypeMapper(object):
+class StructTypeMapper(object):
 
     @staticmethod
     def make_method_name(arrow_type: pa.DataType) -> str:
@@ -19,49 +19,49 @@ class CTypesTypeMapper(object):
 
 
     def type_bool(self, arrow_type):
-        return ctypes.c_bool
+        return '?',1
 
     def type_int8(self, arrow_type):
-        return ctypes.c_int8
+        return 'b',1
 
     def type_uint8(self, arrow_type):
-        return ctypes.c_uint8
+        return 'B',1
 
     def type_int16(self, arrow_type):
-        return ctypes.c_int16
+        return 'h',2
 
     def type_uint16(self, arrow_type):
-        return ctypes.c_uint16
+        return 'H',2
 
     def type_int32(self, arrow_type):
-        return ctypes.c_int32
+        return 'i',4
 
     def type_uint32(self, arrow_type):
-        return ctypes.c_uint32
+        return 'I',4
 
     def type_int64(self, arrow_type):
-        return ctypes.c_int64
+        return 'q',8
 
     def type_uint64(self, arrow_type):
-        return ctypes.c_uint64
+        return 'Q',8
 
     def type_timestamp_ms_(self, arrow_type):
-        return ctypes.c_uint64
+        return 'Q',8
 
     def type_timestamp_s_(self, arrow_type):
-        return ctypes.c_uint64
+        return 'Q',8
 
     def type_string(self, arrow_type):
-        return ctypes.c_char_p
+        return '_str_',1
 
     def type_halffloat(self, arrow_type):
-        return ctypes.c_short
+        return 'e',2
 
     def type_float(self, arrow_type):
-        return ctypes.c_float
+        return 'f',4
 
     def type_double(self, arrow_type):
-        return ctypes.c_double
+        return 'd',8
 
     def unknown_type(self, arrow_type):
         raise NotImplementedError('{} cannot be processed'.format(arrow_type))

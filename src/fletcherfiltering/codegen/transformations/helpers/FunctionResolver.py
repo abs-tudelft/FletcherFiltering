@@ -1,13 +1,14 @@
 import pyarrow as pa
-from collections import namedtuple
+import collections
 
 import typed_ast.ast3 as ast
 
 from . import grouped
+from ... import settings
 
-FunctionMetadata = namedtuple('FunctionMetadata', ['resolved_name', 'generator', 'id'])
+FunctionMetadata = collections.namedtuple('FunctionMetadata', ['resolved_name', 'generator', 'id'])
 
-PrePostAST = namedtuple('FunctionAST', ['pre_ast', 'ast', 'post_ast', 'len_ast'])
+PrePostAST = collections.namedtuple('FunctionAST', ['pre_ast', 'ast', 'post_ast', 'len_ast'])
 
 
 import itertools
@@ -35,7 +36,7 @@ class FunctionResolver(object):
         return method(length_func)
 
     def func_CONCAT(self, length_func: bool = False) -> FunctionMetadata:
-        return FunctionMetadata('__sql_builtin_concat' + ('_len' if length_func else ''), self.gen_CONCAT,
+        return FunctionMetadata('__sql_builtin_concat' + (settings.LENGHT_SUFFIX if length_func else ''), self.gen_CONCAT,
                                 self.get_next_id())
 
     @staticmethod

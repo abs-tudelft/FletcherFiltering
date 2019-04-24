@@ -1,11 +1,14 @@
 import mysql.connector
 import mysql.connector.errorcode as errorcode
-import os.path
 from fletcherfiltering.codegen.compiler import Compiler
+
+from .xsim_output_reader import XSIMOutputReader
 
 from fletcherfiltering.codegen.transformations.helpers import grouped
 
 from fletcherfiltering import settings
+
+from pathlib import Path, PurePath
 
 from ..data_generation.SentenceGenerator import SentenceGenerator
 from ..data_generation.UIntGenerator import UIntGenerator
@@ -19,38 +22,41 @@ from .. import test_settings
 
 from . import python_class_generator
 
+from .process_runner import ProcessRunner, VivadoHLSProcessRunner
+
 import pyarrow as pa
 import shutil
-import subprocess
+import os
 import ctypes
 import copy
 import pytest
 import sys
 import platform
 import struct
+import string
+import math
 
 
 class BaseQuery:
-    def __init__(self, printer, cnx, working_dir_base, name='query', has_data_file=False, separate_work_dir=False,
+    def __init__(self, printer, cnx, working_dir_base: Path, name='query', has_data_file=False, separate_work_dir=False,
                  clean_workdir=False):
         self.printer = printer
         self.cnx = cnx
-        assert os.path.isdir(working_dir_base)
-        assert os.access(working_dir_base, os.W_OK)
+        assert working_dir_base.is_dir()
         self.data = []
         self.cursor = cnx.cursor(dictionary=True, buffered=True)
         self.name = name
         self.has_data_file = has_data_file
-        self.in_schema = pa.schema([])
-        self.out_schema = pa.schema([])
+        self.in_schema = None
+        self.out_schema = None
         self.in_schema_pk = None
         self.query = None
         self.clean_workdir = clean_workdir
-        self.swallow_build_output = False
+        self.swallow_build_output = test_settings.SWALLOW_OUTPUT
         if separate_work_dir:
-            self.working_dir = os.path.join(working_dir_base, test_settings.WORKSPACE_NAME, self.name)
+            self.working_dir = working_dir_base / test_settings.WORKSPACE_NAME / self.name
         else:
-            self.working_dir = os.path.join(working_dir_base, test_settings.WORKSPACE_NAME)
+            self.working_dir = working_dir_base / test_settings.WORKSPACE_NAME
 
     def setup(self):
         if not self.create_table():
@@ -59,14 +65,14 @@ class BaseQuery:
             if not self.create_table():
                 pytest.fail("Could not create table successfully on second try.")
 
-        if not os.path.exists(self.working_dir):
+        if not self.working_dir.exists():
             self.printer("Creating workspace directory '{}'".format(self.working_dir))
-            os.makedirs(self.working_dir)
+            self.working_dir.mkdir(parents=True, exist_ok=True)
         else:
             if self.clean_workdir:
                 self.printer("Re-creating workspace directory '{}'".format(self.working_dir))
                 shutil.rmtree(self.working_dir)
-                os.makedirs(self.working_dir)
+                self.working_dir.mkdir(parents=True, exist_ok=True)
             else:
                 self.printer("Using workspace directory '{}'".format(self.working_dir))
 
@@ -164,19 +170,6 @@ class BaseQuery:
                  extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH,
                  extra_link_libraries=test_settings.HLS_LIBS)
 
-        with open(os.devnull, "w") as f:
-            redir = f
-            if not self.swallow_build_output:
-                redir = None
-
-            self.printer("Running CMake Generate...")
-            subprocess.run('cmake -G "{}" -DCMAKE_BUILD_TYPE={} .'.format(test_settings.CMAKE_GENERATOR,
-                                                                          test_settings.BUILD_CONFIG), shell=True,
-                           check=True, cwd=self.working_dir, stdout=redir)
-            self.printer("Running CMake Build...")
-            subprocess.run("cmake --build . --config {}".format(test_settings.BUILD_CONFIG), shell=True, check=True,
-                           cwd=self.working_dir, stdout=redir)
-
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
         schema_ast = python_class_generator.get_class_ast(schema, schema_name)
@@ -186,18 +179,33 @@ class BaseQuery:
         return schema_local_scope[schema_name]
 
     def run_fletcherfiltering(self):
+        with open(os.devnull, "w") as f:
+            redir = f
+            if not self.swallow_build_output:
+                redir = None
+
+            self.printer("Running CMake Generate...")
+            result = ProcessRunner(self.printer, ['cmake', '-G', test_settings.CMAKE_GENERATOR,
+                                                  '-DCMAKE_BUILD_TYPE={}'.format(test_settings.BUILD_CONFIG), '.'],
+                                   shell=False, cwd=self.working_dir, stdout=redir)
+            if result != 0:
+                pytest.fail("CMake Generate exited with code {}".format(result))
+            self.printer("Running CMake Build...")
+            result = ProcessRunner(self.printer, ['cmake', '--build', '.', '--config', test_settings.BUILD_CONFIG],
+                                   shell=False, cwd=self.working_dir, stdout=redir)
+            if result != 0:
+                pytest.fail("CMake Build exited with code {}".format(result))
 
         in_schema_type = self.build_schema_class(self.in_schema, 'In')
 
         out_schema_type = self.build_schema_class(self.out_schema, 'Out')
 
-        if platform.system() == 'darwin':
-            lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.dylib'.format(self.name)))
+        if platform.system() == 'Darwin':
+            lib = ctypes.CDLL(str(self.working_dir / 'libcodegen-{}.dylib'.format(self.name)))
         elif platform.system() == 'Windows':
-            lib = ctypes.WinDLL(
-                os.path.join(self.working_dir, test_settings.BUILD_CONFIG, 'codegen-{}.dll'.format(self.name)))
+            lib = ctypes.WinDLL(str(self.working_dir / test_settings.BUILD_CONFIG / 'codegen-{}.dll'.format(self.name)))
         else:
-            lib = ctypes.CDLL(os.path.join(self.working_dir, 'libcodegen-{}.so'.format(self.name)))
+            lib = ctypes.CDLL(str(self.working_dir / 'libcodegen-{}.so'.format(self.name)))
         fletcherfiltering_test = lib.__getattr__(self.name + settings.TEST_SUFFIX)
         fletcherfiltering_test.restype = ctypes.c_bool
         fletcherfiltering_test.argtypes = [ctypes.POINTER(in_schema_type), ctypes.POINTER(out_schema_type)]
@@ -235,7 +243,7 @@ class BaseQuery:
                     elif col.type == pa.float16():
                         # unpack the data as a short and the unpack that as a halffloat
                         out_data[col.name] = \
-                        struct.unpack('e', struct.pack('h', copy.copy(getattr(out_schema, col.name))))[0]
+                            struct.unpack('e', struct.pack('h', copy.copy(getattr(out_schema, col.name))))[0]
                     else:
                         out_data[col.name] = copy.copy(getattr(out_schema, col.name))
                 result_data.append(out_data)
@@ -243,22 +251,67 @@ class BaseQuery:
         return result_data
 
     def run_vivado(self):
+        if platform.system() == 'Darwin':
+            self.printer("Vivado is not supported on macOS.")
+            return None
+
         if test_settings.VIVADO_BIN_DIR == '':
             pytest.fail("No Vivado install configured.")
 
         vivado_env = {
-            'PATH': test_settings.VIVADO_BIN_DIR
+            'PATH': str(test_settings.VIVADO_BIN_DIR)
         }
+        data_placeholder = []
+        for data_item in self.data:
+            data_item_lst = []
+            for col in self.in_schema:
+                if col.type == pa.string():
+                    data_item_lst.append("\"{}\"".format(data_item[col.name]))
+                elif col.type == pa.bool_():
+                    data_item_lst.append("{}".format('true' if data_item[col.name] else 'false'))
+                elif col.type == pa.float32():
+                    data_item_lst.append("{}f".format(data_item[col.name]))
+                elif col.type == pa.uint8() or col.type == pa.uint16() or col.type == pa.uint32():
+                    data_item_lst.append("{}u".format(data_item[col.name]))
+                elif col.type == pa.int64():
+                    data_item_lst.append("{}ll".format(data_item[col.name]))
+                elif col.type == pa.uint64():
+                    data_item_lst.append("{}ull".format(data_item[col.name]))
+                elif col.type == pa.timestamp('ms'):
+                    data_item_lst.append("{}ull".format(data_item[col.name]))
+                else:
+                    data_item_lst.append("{}".format(data_item[col.name]))
+            data_placeholder.append(", ".join(data_item_lst))
+
+        template_data = {
+            'data_N_placeholder': len(self.data),
+            'data_placeholder': ",\n\t".join(data_placeholder),
+        }
+
+        with open(self.working_dir / Path('{0}{1}.h'.format(self.name, settings.DATA_SUFFIX)), 'r+') as data_file:
+            data_cpp = string.Template(data_file.read())
+            data_file.seek(0)
+            data_file.write(data_cpp.safe_substitute(template_data))
+            data_file.truncate()
         with open(os.devnull, "w") as f:
             redir = f
             if not self.swallow_build_output:
                 redir = None
-            subprocess.run("vivado_hls -f run_complete_hls.tcl", shell=True, check=True, cwd=self.working_dir,
-                           stdout=redir, env={**os.environ, **vivado_env})
+            result, sim_result = VivadoHLSProcessRunner(self.printer,
+                                                        [str(test_settings.VIVADO_BIN_DIR / 'vivado_hls.bat'), '-f',
+                                                         'run_complete_hls.tcl'],
+                                                        shell=False, cwd=self.working_dir, stdout=redir,
+                                                        env={**os.environ, **vivado_env})
+            if result != 0:
+                pytest.fail("Failed to run Vivado. Exited with code {}.".format(result))
 
-        #TODO read output file transactions
+            self.printer("Vivado reported C/RTL co-simulation result: {}".format(sim_result))
 
-        return []
+            assert sim_result == 'PASS'
+
+        xor = XSIMOutputReader(self.in_schema, self.out_schema)
+
+        return xor.read(self.working_dir / self.name / 'automated_tests' / 'sim' / 'tv', self.name)
 
     def run_sql(self):
 
@@ -275,33 +328,88 @@ class BaseQuery:
 
         self.printer("Executing query on MySQL...")
         sql_data = self.run_sql()
-        self.printer("Executing query on FletcherFiltering...")
-        fletcher_data = self.run_fletcherfiltering()
-        self.printer("Executing query on Vivado XSIM...")
-        vivado_data = self.run_vivado()
-
-        self.printer("Verifying the returned data...")
-
-        if len(fletcher_data) > len(sql_data):
-            pytest.fail(
-                "FlechterFiltering let too many records through {} vs {}".format(len(fletcher_data), len(sql_data)))
-        elif len(fletcher_data) < len(sql_data):
-            pytest.fail(
-                "FlechterFiltering let too few records through {} vs {}".format(len(fletcher_data), len(sql_data)))
+        if platform.system() == 'Darwin' or platform.system() == 'Linux':
+            self.printer("Executing query on FletcherFiltering...")
+            fletcher_data = self.run_fletcherfiltering()
         else:
-            for record_set in zip(sql_data, fletcher_data):
-                assert record_set[0] == record_set[1]
-
-        if len(vivado_data) > len(sql_data):
-            pytest.fail(
-                "Vivado XSIM let too many records through {} vs {}".format(len(vivado_data), len(sql_data)))
-        elif len(vivado_data) < len(sql_data):
-            pytest.fail(
-                "Vivado XSIM let too few records through {} vs {}".format(len(vivado_data), len(sql_data)))
+            fletcher_data = None
+        if platform.system() == 'Windows' or platform.system() == 'Linux':
+            self.printer("Executing query on Vivado XSIM...")
+            vivado_data = self.run_vivado()
         else:
-            for record_set in zip(sql_data, vivado_data):
-                assert record_set[0] == record_set[1]
+            vivado_data = None
+
+        if fletcher_data is None and vivado_data is None:
+            pytest.xfail("No implementation data was gathered. Platform possibly unsupported.")
+
+        if fletcher_data is not None:
+            self.printer("Verifying the returned FletcherFiltering data...")
+            if len(fletcher_data) > len(sql_data):
+                pytest.fail(
+                    "FlechterFiltering let too many records through {} vs {}".format(len(fletcher_data), len(sql_data)))
+            elif len(fletcher_data) < len(sql_data):
+                pytest.fail(
+                    "FlechterFiltering let too few records through {} vs {}".format(len(fletcher_data), len(sql_data)))
+            else:
+                for record_set in zip(sql_data, fletcher_data):
+                    if not self.check_record_set(*record_set):
+                        pytest.fail("Item from FletcherFiltering is not the same as item from SQL. \n{}\n{}".format(
+                            record_set[0], record_set[1]))
+        else:
+            self.printer("No FletcherFiltering output data, platform not supported.")
+
+        if vivado_data is not None:
+            self.printer("Verifying the returned Vivado XSIM data...")
+            if len(vivado_data) > len(sql_data):
+                pytest.fail(
+                    "Vivado XSIM let too many records through {} vs {}".format(len(vivado_data), len(sql_data)))
+            elif len(vivado_data) < len(sql_data):
+                pytest.fail(
+                    "Vivado XSIM let too few records through {} vs {}".format(len(vivado_data), len(sql_data)))
+            else:
+                for record_set in zip(sql_data, vivado_data):
+                    if not self.check_record_set(*record_set):
+                        pytest.fail(
+                            "Item from Vivado XSIM is not the same as item from SQL. \n{}\n{}".format(record_set[0],
+                                                                                                      record_set[1]))
+        else:
+            self.printer("No Vivado XSIM output data, platform not supported.")
         return True
+
+    def check_record_set(self, reference, candidate):
+        errors = 0
+        for col in self.out_schema:
+            if col.name not in reference:
+                self.printer("Column {} does not exist in the reference record.".format(col.name))
+                errors += 1
+                continue
+
+            if col.name not in candidate:
+                self.printer("Column {} does not exist in the candidate record.".format(col.name))
+                errors += 1
+                continue
+
+            if col.type == pa.float16():
+                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT16):
+                    self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
+                                                                                                               test_settings.REL_TOL_FLOAT16))
+                    errors += 1
+            elif col.type == pa.float32():
+                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT32):
+                    self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
+                                                                                                               test_settings.REL_TOL_FLOAT32))
+                    errors += 1
+            elif col.type == pa.float64():
+                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT64):
+                    self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
+                                                                                                               test_settings.REL_TOL_FLOAT64))
+                    errors += 1
+            else:
+                if not reference[col.name] == candidate[col.name]:
+                    self.printer("Column {} does not have the same value in both records.".format(col.name))
+                    errors += 1
+        self.printer("Record errors: {}".format(errors))
+        return errors == 0
 
     def drop_table(self):
         query = """DROP TABLE `{0}`;""".format(self.name)

@@ -1,4 +1,5 @@
 #pragma once
+#include <inttypes.h>
 #define STRING_SIZE 255
 
 template <typename T> 
