@@ -11,6 +11,9 @@ REL_TOL_FLOAT16 = 1e-2 # digits for half float: 3.31
 REL_TOL_FLOAT32 = 1e-5 # digits for single float: 7.22
 REL_TOL_FLOAT64 = 1e-9 # digits for double float: 15.95
 
+FLOAT16_MAX = 65504.0
+FLOAT16_MIN = 0.000061035
+
 MYSQL_USER='fletcherfiltering'
 MYSQL_PASSWORD='pfUcFN4S9Qq7X6NDBMHk'
 MYSQL_HOST='127.0.0.1'

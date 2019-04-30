@@ -26,7 +26,7 @@ def VivadoHLSProcessRunner(printer, proc_args: Sequence[Union[bytes, str, PathLi
 
     printed_levels = ['ERROR', 'WARNING']
 
-    printed_modules = ['COSIM','HLS', 'COMMON']
+    printed_modules = ['COSIM', 'HLS', 'COMMON']
 
     test_output = False
 
@@ -47,10 +47,11 @@ def VivadoHLSProcessRunner(printer, proc_args: Sequence[Union[bytes, str, PathLi
 
                 if groupdict['module'].upper() in printed_modules or groupdict['level'].upper() in printed_levels:
                     printer("{level}: [{module} {code}] {message}".format(**matches.groupdict()))
-                    if groupdict['module'].upper() == 'COSIM' or groupdict['level'].upper() == 'INFO':
-                        result_matches = result_regex.match(groupdict['message'])
-                        if result_matches:
-                            sim_result = result_matches.group('result').strip()
+
+                if groupdict['module'].upper() == 'COSIM' or groupdict['level'].upper() == 'INFO':
+                    result_matches = result_regex.match(groupdict['message'])
+                    if result_matches:
+                        sim_result = result_matches.group('result').strip()
             elif "== Start ==" in output:
                 test_output = True
                 printer(output.strip())

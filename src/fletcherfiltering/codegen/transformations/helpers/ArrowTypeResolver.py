@@ -95,6 +95,18 @@ class ArrowTypeResolver(object):
             ctx=ast.Load()
         )
 
+    def type_timestamp_us_(self, arrow_type, as_pointer: bool = False, as_const: bool = False):
+        return ast.Name(
+            id=("const " if as_const else "") + "uint64_t" + ("*" if as_pointer else ''),
+            ctx=ast.Load()
+        )
+
+    def type_timestamp_ns_(self, arrow_type, as_pointer: bool = False, as_const: bool = False):
+        return ast.Name(
+            id=("const " if as_const else "") + "uint64_t" + ("*" if as_pointer else ''),
+            ctx=ast.Load()
+        )
+
     def type_string(self, arrow_type, as_pointer: bool = False, as_const: bool = False):
         return ast.Name(
             id=("const " if as_const else "") + "char" + ("*" if as_pointer else ''),

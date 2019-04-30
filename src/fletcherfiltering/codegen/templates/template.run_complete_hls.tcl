@@ -16,6 +16,6 @@ set_part {${part_name}}
 create_clock -period 10 -name default
 csim_design -O
 csynth_design
-cosim_design -trace_level all -rtl vhdl
+cosim_design -O -trace_level all -rtl vhdl
 #export_design -rtl vhdl -format ip_catalog
 exit

@@ -1,4 +1,5 @@
 import typed_ast.ast3 as ast
+import horast
 from typing import Union, Tuple
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
@@ -25,7 +26,8 @@ class PythonASTTransform(BaseTransform):
 
     # region Schema Helpers
 
-    def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema", test_data=False, is_input=False) -> ast.Expr:
+    def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema", test_data=False,
+                       is_input=False) -> ast.Expr:
         schema_ast = []
         for col in schema:
             col_def = ast.AnnAssign(
@@ -68,7 +70,7 @@ class PythonASTTransform(BaseTransform):
                             id=col.name,
                             ctx=ast.Store()
                         ),
-                        slice=ast.Index(ast.Num(settings.VAR_LENGTH)),
+                        slice=ast.Index(ast.Name(id="VAR_LENGTH", ctx=ast.Load())),
                         ctx=ast.Store()
                     ),
                     annotation=self.type_resolver.resolve(arrow_type=col.type),
@@ -107,27 +109,28 @@ class PythonASTTransform(BaseTransform):
                         ],
                         keywords=[]
                     ),
-                    body=[ast.Expr(ast.BinOp(
-                        left=ast.Attribute(
-                            value=ast.Name(
-                                id='in_data',
-                                ctx=ast.Load()),
-                            attr=col.name,
-                            ctx=ast.Load()),
-                        op=ast.RShift(),
-                        right=ast.Subscript(
-                            value=ast.Name(
-                                id=col.name,
-                                ctx=ast.Load()
-                            ),
-                            slice=ast.Index(ast.Name(
-                                id='i',
-                                ctx=ast.Load()
-                            )),
-                            ctx=ast.Store()
-                        ),
-                        type_comment=None)
-                    )],
+                    body=[make_comment("pragma HLS PIPELINE"),
+                          ast.Expr(ast.BinOp(
+                              left=ast.Attribute(
+                                  value=ast.Name(
+                                      id=settings.INPUT_NAME,
+                                      ctx=ast.Load()),
+                                  attr=col.name,
+                                  ctx=ast.Load()),
+                              op=ast.RShift(),
+                              right=ast.Subscript(
+                                  value=ast.Name(
+                                      id=col.name,
+                                      ctx=ast.Load()
+                                  ),
+                                  slice=ast.Index(ast.Name(
+                                      id='i',
+                                      ctx=ast.Load()
+                                  )),
+                                  ctx=ast.Store()
+                              ),
+                              type_comment=None)
+                          )],
                     orelse=None,
                     type_comment=ast.Name(
                         id='int',
@@ -138,7 +141,7 @@ class PythonASTTransform(BaseTransform):
                 col_load = ast.Expr(ast.BinOp(
                     left=ast.Attribute(
                         value=ast.Name(
-                            id='in_data',
+                            id=settings.INPUT_NAME,
                             ctx=ast.Load()),
                         attr=col.name,
                         ctx=ast.Load()),
@@ -150,7 +153,7 @@ class PythonASTTransform(BaseTransform):
             col_load_len = ast.Expr(ast.BinOp(
                 left=ast.Attribute(
                     value=ast.Name(
-                        id='in_data',
+                        id=settings.INPUT_NAME,
                         ctx=ast.Load()),
                     attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Load()),
@@ -187,29 +190,30 @@ class PythonASTTransform(BaseTransform):
                         ],
                         keywords=[]
                     ),
-                    body=[ast.Expr(ast.BinOp(
-                        left=ast.Attribute(
-                            value=ast.Name(
-                                id='in_data',
-                                ctx=ast.Load()),
-                            attr=col.name,
-                            ctx=ast.Load()),
-                        op=ast.LShift(),
-                        right=ast.Subscript(
-                            value=ast.Attribute(
-                                value=ast.Name(
-                                    id='in_data_test',
-                                    ctx=ast.Load()),
-                                attr=col.name,
-                                ctx=ast.Load()),
-                            slice=ast.Index(ast.Name(
-                                id='i',
-                                ctx=ast.Load()
-                            )),
-                            ctx=ast.Store()
-                        ),
-                        type_comment=None)
-                    )],
+                    body=[make_comment("pragma HLS PIPELINE"),
+                          ast.Expr(ast.BinOp(
+                              left=ast.Attribute(
+                                  value=ast.Name(
+                                      id=settings.INPUT_NAME,
+                                      ctx=ast.Load()),
+                                  attr=col.name,
+                                  ctx=ast.Load()),
+                              op=ast.LShift(),
+                              right=ast.Subscript(
+                                  value=ast.Attribute(
+                                      value=ast.Name(
+                                          id=settings.INPUT_NAME + settings.TEST_SUFFIX,
+                                          ctx=ast.Load()),
+                                      attr=col.name,
+                                      ctx=ast.Load()),
+                                  slice=ast.Index(ast.Name(
+                                      id='i',
+                                      ctx=ast.Load()
+                                  )),
+                                  ctx=ast.Store()
+                              ),
+                              type_comment=None)
+                          )],
                     orelse=None,
                     type_comment=ast.Name(
                         id='int',
@@ -220,14 +224,14 @@ class PythonASTTransform(BaseTransform):
                 col_load = ast.Expr(ast.BinOp(
                     left=ast.Attribute(
                         value=ast.Name(
-                            id='in_data',
+                            id=settings.INPUT_NAME,
                             ctx=ast.Load()),
                         attr=col.name,
                         ctx=ast.Load()),
                     op=ast.LShift(),
                     right=ast.Attribute(
                         value=ast.Name(
-                            id='in_data_test',
+                            id=settings.INPUT_NAME + settings.TEST_SUFFIX,
                             ctx=ast.Load()),
                         attr=col.name,
                         ctx=ast.Load()),
@@ -246,7 +250,7 @@ class PythonASTTransform(BaseTransform):
                     args=[
                         ast.Attribute(
                             value=ast.Name(
-                                id='in_data_test',
+                                id=settings.INPUT_NAME + settings.TEST_SUFFIX,
                                 ctx=ast.Load()
                             ),
                             attr=col.name,
@@ -258,7 +262,7 @@ class PythonASTTransform(BaseTransform):
             col_load_len = ast.Expr(ast.BinOp(
                 left=ast.Attribute(
                     value=ast.Name(
-                        id='in_data',
+                        id=settings.INPUT_NAME,
                         ctx=ast.Load()),
                     attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Load()),
@@ -297,28 +301,29 @@ class PythonASTTransform(BaseTransform):
                         ],
                         keywords=[]
                     ),
-                    body=[ast.Expr(ast.BinOp(
-                        left=
-                        ast.Attribute(
-                            value=ast.Name(
-                                id='out_data',
-                                ctx=ast.Load()),
-                            attr=col.name,
-                            ctx=ast.Store()),
-                        op=ast.LShift(),
-                        right=ast.Subscript(
-                            value=ast.Name(
-                                id=col_name_code,
-                                ctx=ast.Load()
-                            ),
-                            slice=ast.Index(ast.Name(
-                                id='i',
-                                ctx=ast.Load()
-                            )),
-                            ctx=ast.Load()
-                        ),
-                        type_comment=None))
-                    ],
+                    body=[make_comment("pragma HLS PIPELINE"),
+                          ast.Expr(ast.BinOp(
+                              left=
+                              ast.Attribute(
+                                  value=ast.Name(
+                                      id=settings.OUTPUT_NAME,
+                                      ctx=ast.Load()),
+                                  attr=col.name,
+                                  ctx=ast.Store()),
+                              op=ast.LShift(),
+                              right=ast.Subscript(
+                                  value=ast.Name(
+                                      id=col_name_code,
+                                      ctx=ast.Load()
+                                  ),
+                                  slice=ast.Index(ast.Name(
+                                      id='i',
+                                      ctx=ast.Load()
+                                  )),
+                                  ctx=ast.Load()
+                              ),
+                              type_comment=None))
+                          ],
                     orelse=None,
                     type_comment=ast.Name(
                         id='int',
@@ -330,7 +335,7 @@ class PythonASTTransform(BaseTransform):
                     left=
                     ast.Attribute(
                         value=ast.Name(
-                            id='out_data',
+                            id=settings.OUTPUT_NAME,
                             ctx=ast.Load()),
                         attr=col.name,
                         ctx=ast.Store()),
@@ -345,7 +350,7 @@ class PythonASTTransform(BaseTransform):
                 left=
                 ast.Attribute(
                     value=ast.Name(
-                        id='out_data',
+                        id=settings.OUTPUT_NAME,
                         ctx=ast.Load()),
                     attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Store()),
@@ -387,7 +392,7 @@ class PythonASTTransform(BaseTransform):
                         left=
                         ast.Attribute(
                             value=ast.Name(
-                                id='out_data',
+                                id=settings.OUTPUT_NAME,
                                 ctx=ast.Load()),
                             attr=col.name,
                             ctx=ast.Store()),
@@ -395,7 +400,7 @@ class PythonASTTransform(BaseTransform):
                         right=ast.Subscript(
                             value=ast.Attribute(
                                 value=ast.Name(
-                                    id='out_data_test',
+                                    id=settings.OUTPUT_NAME + settings.TEST_SUFFIX,
                                     ctx=ast.Load()),
                                 attr=col.name,
                                 ctx=ast.Load()),
@@ -418,14 +423,14 @@ class PythonASTTransform(BaseTransform):
                     left=
                     ast.Attribute(
                         value=ast.Name(
-                            id='out_data',
+                            id=settings.OUTPUT_NAME,
                             ctx=ast.Load()),
                         attr=col.name,
                         ctx=ast.Store()),
                     op=ast.RShift(),
                     right=ast.Attribute(
                         value=ast.Name(
-                            id='out_data_test',
+                            id=settings.OUTPUT_NAME + settings.TEST_SUFFIX,
                             ctx=ast.Load()),
                         attr=col.name,
                         ctx=ast.Load()),
@@ -436,7 +441,7 @@ class PythonASTTransform(BaseTransform):
                     ast.Subscript(
                         value=ast.Attribute(
                             value=ast.Name(
-                                id='out_data_test',
+                                id=settings.OUTPUT_NAME + settings.TEST_SUFFIX,
                                 ctx=ast.Load()),
                             attr=col.name,
                             ctx=ast.Load()),
@@ -456,7 +461,7 @@ class PythonASTTransform(BaseTransform):
                 left=
                 ast.Attribute(
                     value=ast.Name(
-                        id='out_data',
+                        id=settings.OUTPUT_NAME,
                         ctx=ast.Load()),
                     attr=col.name + settings.LENGTH_SUFFIX,
                     ctx=ast.Store()),
@@ -496,6 +501,43 @@ class PythonASTTransform(BaseTransform):
     def get_input_ast(self) -> list:
         return self.get_load_schema_ast(self.in_schema)
 
+    def get_port_pragma_ast(self) -> list:
+        port_pragma_ast = []
+        port_pragma_ast.append(make_comment('pragma HLS INTERFACE {} port=return'.format(settings.BLOCK_LEVEL_IO_TYPE)))
+
+        # TODO Add name={2}{1} back in
+        for col in self.in_schema:
+            port_pragma_ast.append(
+                make_comment(
+                    'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE, col.name,
+                                                                   settings.INPORT_PREFIX,
+                                                                   settings.INPUT_NAME)))
+            if col.type in settings.VAR_LENGTH_TYPES:
+                port_pragma_ast.append(
+                    make_comment(
+                        'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE,
+                                                                       col.name + settings.LENGTH_SUFFIX,
+                                                                       settings.INPORT_PREFIX,
+                                                                       settings.INPUT_NAME)))
+
+        for col in self.out_schema:
+            port_pragma_ast.append(
+                make_comment(
+                    'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE, col.name,
+                                                                   settings.OUTPORT_PREFIX,
+                                                                   settings.OUTPUT_NAME)))
+            if col.type in settings.VAR_LENGTH_TYPES:
+                port_pragma_ast.append(
+                    make_comment(
+                        'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE,
+                                                                       col.name + settings.LENGTH_SUFFIX,
+                                                                       settings.OUTPORT_PREFIX,
+                                                                       settings.OUTPUT_NAME)))
+
+        # port_pragma_ast.append(make_comment('pragma HLS DATAFLOW'.format(settings.BLOCK_LEVEL_IO_TYPE)))
+
+        return port_pragma_ast
+
     def get_output_ast(self) -> list:
         return [
             ast.If(
@@ -510,14 +552,14 @@ class PythonASTTransform(BaseTransform):
         return [
                    ast.AnnAssign(
                        target=ast.Name(
-                           id='in_data',
+                           id=settings.INPUT_NAME,
                            ctx=ast.Store()),
                        annotation=ast.Name(id='in_schema', ctx=ast.Load()),
                        value=None,
                        simple=1),
                    ast.AnnAssign(
                        target=ast.Name(
-                           id='out_data',
+                           id=settings.OUTPUT_NAME,
                            ctx=ast.Store()),
                        annotation=ast.Name(id='out_schema', ctx=ast.Load()),
                        value=None,
@@ -730,7 +772,7 @@ class PythonASTTransform(BaseTransform):
 
             col_value = self.visit(select_col)
 
-            col_len_ast = ast.Num(settings.VAR_LENGTH)
+            col_len_ast = ast.Name(id="VAR_LENGTH", ctx=ast.Load())
 
             if isinstance(col_value, PrePostAST):
                 col_value_ast = col_value.ast
@@ -810,13 +852,13 @@ class PythonASTTransform(BaseTransform):
             args=ast.arguments(
                 args=[
                     ast.arg(
-                        arg='in_data',
+                        arg=settings.INPUT_NAME,
                         annotation=ast.Index(ast.Name(
                             id='in_schema',
                             ctx=ast.Load())),
                         type_comment=None),
                     ast.arg(
-                        arg='out_data',
+                        arg=settings.OUTPUT_NAME,
                         annotation=ast.Index(ast.Name(
                             id='out_schema',
                             ctx=ast.Load())),
@@ -827,8 +869,9 @@ class PythonASTTransform(BaseTransform):
                 kw_defaults=[],
                 kwarg=None,
                 defaults=[]),
-            body=self.get_input_ast() + [make_comment("Start of data processing")] + self.visit(node.q) + [
-                make_comment("End of data processing")] + self.get_output_ast() + [
+            body=self.get_port_pragma_ast() + self.get_input_ast() + [
+                make_comment("Start of data processing")] + self.visit(node.q) + [
+                     make_comment("End of data processing")] + self.get_output_ast() + [
                      ast.Expr(ast.Return(
                          value=ast.Name(
                              id=settings.PASS_VAR_NAME,
@@ -848,13 +891,13 @@ class PythonASTTransform(BaseTransform):
             args=ast.arguments(
                 args=[
                     ast.arg(
-                        arg='in_data' + settings.TEST_SUFFIX,
+                        arg=settings.INPUT_NAME + settings.TEST_SUFFIX,
                         annotation=ast.Index(ast.Name(
                             id='in_schema' + settings.TEST_SUFFIX,
                             ctx=ast.Load())),
                         type_comment=None),
                     ast.arg(
-                        arg='out_data' + settings.TEST_SUFFIX,
+                        arg=settings.OUTPUT_NAME + settings.TEST_SUFFIX,
                         annotation=ast.Index(ast.Name(
                             id='out_schema' + settings.TEST_SUFFIX,
                             ctx=ast.Load())),
@@ -883,11 +926,11 @@ class PythonASTTransform(BaseTransform):
                         ),
                         args=[
                             ast.Name(
-                                id='in_data',
+                                id=settings.INPUT_NAME,
                                 ctx=ast.Load()
                             ),
                             ast.Name(
-                                id='out_data',
+                                id=settings.OUTPUT_NAME,
                                 ctx=ast.Load()
                             )
                         ],
@@ -911,10 +954,11 @@ class PythonASTTransform(BaseTransform):
             ),
             type_comment=None)
 
-        header_ast = [self.get_in_schema_ast(),
-                      self.get_out_schema_ast(),
-                      function_ast
-                      ]
+        header_ast = [
+            self.get_in_schema_ast(),
+            self.get_out_schema_ast(),
+            function_ast
+        ]
 
         code_ast = [
             function_ast

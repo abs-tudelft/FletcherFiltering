@@ -1,6 +1,6 @@
 #pragma once
 #include <inttypes.h>
-#define STRING_SIZE 255
+#define VAR_LENGTH ${VAR_LENGTH}
 
 template <typename T> 
 struct nullable {

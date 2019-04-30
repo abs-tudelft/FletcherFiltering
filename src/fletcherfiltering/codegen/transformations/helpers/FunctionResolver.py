@@ -1,17 +1,14 @@
 import pyarrow as pa
-import collections
+from collections import namedtuple
 
 import typed_ast.ast3 as ast
 
-from . import grouped
+from . import grouped, make_comment
 from ... import settings
 
-FunctionMetadata = collections.namedtuple('FunctionMetadata', ['resolved_name', 'generator', 'id'])
+FunctionMetadata = namedtuple('FunctionMetadata', ['resolved_name', 'generator', 'id'])
 
-PrePostAST = collections.namedtuple('FunctionAST', ['pre_ast', 'ast', 'post_ast', 'len_ast'])
-
-
-import itertools
+PrePostAST = namedtuple('FunctionAST', ['pre_ast', 'ast', 'post_ast', 'len_ast'])
 
 class FunctionResolver(object):
 
@@ -36,7 +33,7 @@ class FunctionResolver(object):
         return method(length_func)
 
     def func_CONCAT(self, length_func: bool = False) -> FunctionMetadata:
-        return FunctionMetadata('__sql_builtin_concat' + (settings.LENGHT_SUFFIX if length_func else ''), self.gen_CONCAT,
+        return FunctionMetadata('__sql_builtin_concat' + (settings.LENGTH_SUFFIX if length_func else ''), self.gen_CONCAT,
                                 self.get_next_id())
 
     @staticmethod
@@ -57,7 +54,7 @@ class FunctionResolver(object):
                     id=buf_name,
                     ctx=ast.Store()
                 ),
-                slice=ast.Index(ast.Num(256)),
+                slice=ast.Index(ast.Name(id="VAR_LENGTH",ctx=ast.Load())),
                 ctx=ast.Store()
             ),
             annotation=ast.Name(
@@ -81,6 +78,7 @@ class FunctionResolver(object):
         buffer_ast = ast.Name(id=buf_name, ctx=ast.Load())
         offset_ast = ast.Name(id=offset_name, ctx=ast.Load())
         offset_value_ast = ast.Name(id=offset_ref_name, ctx=ast.Load())
+        extra_ast.append(make_comment("pragma HLS INLINE REGION"))
         for arg, arg_len in grouped(func_ast.args,2):
             extra_ast.append(
                 ast.Expr(
@@ -91,6 +89,8 @@ class FunctionResolver(object):
                 )
             )
 
+
+        extra_ast.append(make_comment("pragma HLS INLINE OFF"))
         func_ast.args = [ast.Name(id=buf_name, ctx=ast.Load())] + func_ast.args
 
         value_ast = ast.Name(

@@ -24,6 +24,8 @@ from .transformations.ConcatTransform import ConcatTransform
 from .transformations.ConstantPropagationTransform import ConstantPropagationTransform
 from .transformations.PythonASTTransform import PythonASTTransform
 
+from collections import namedtuple
+
 # These templates are all formatted, so double up curly braces.
 source_header_header = """#pragma once
 #if _MSC_VER && !__INTEL_COMPILER
@@ -47,6 +49,8 @@ source_header_test_header = """#pragma once
 extern "C" {{"""
 
 source_header_test_footer = """}}"""
+
+TemplateData = namedtuple('TemplateData', ['source', 'destination'])
 
 
 class Compiler(object):
@@ -75,7 +79,7 @@ class Compiler(object):
                  include_build_system: bool = True, include_test_system: bool = True,
                  extra_include_dirs: List[PurePath] = '',
                  extra_link_dirs: List[PurePath] = '',
-                 extra_link_libraries: List[str] = '', part_name: str = 'xa7a12tcsg325-1q'):
+                 extra_link_libraries: List[str] = '', part_name: str = settings.PART_NAME):
         assert isinstance(query_str, str)
 
         queries = self.parse(query_str)
@@ -100,6 +104,7 @@ class Compiler(object):
         out_str_columns = [x.name for x in self.out_schema if x.type == pa.string()]
 
         template_data = {
+            'VAR_LENGTH': settings.VAR_LENGTH,
             'query_name': query_name,
             'generated_files': " ".join(generated_files),
             'extra_include_dirs': ' '.join([d.as_posix() for d in extra_include_dirs]),
@@ -113,32 +118,37 @@ class Compiler(object):
             'out_columns_tb_new': "\n    ".join([tb_new.format(x, settings.VAR_LENGTH + 1) for x in out_str_columns]),
         }
 
-        if include_build_system:
-            self.copy_files(self.template_path, output_dir.resolve(),
-                            [Path('fletcherfiltering.cpp'), Path('fletcherfiltering.h')])
+        build_system_files = [
+            TemplateData(self.template_path / Path('template.fletcherfiltering.cpp'),
+                         output_dir / Path('fletcherfiltering.cpp')),
+            TemplateData(self.template_path / Path('template.fletcherfiltering.h'),
+                         output_dir / Path('fletcherfiltering.h')),
+            TemplateData(self.template_path / Path('template.CMakeLists.txt'),
+                         output_dir / Path('CMakeLists.txt')),
+        ]
 
-            with open(self.template_path / 'template.CMakeLists.txt', 'r') as template_file:
-                cmake_list = string.Template(template_file.read())
-                with open(output_dir / Path('CMakeLists.txt'), 'w') as cmake_file:
-                    cmake_file.write(cmake_list.safe_substitute(template_data))
+        test_system_files = [
+            TemplateData(self.template_path / Path('template.run_complete_hls.tcl'),
+                         output_dir / Path('run_complete_hls.tcl')),
+            TemplateData(self.template_path / Path('template.testbench.cpp'),
+                         output_dir / Path('{0}{1}.cpp'.format(query_name, settings.TESTBENCH_SUFFIX))),
+            TemplateData(self.template_path / Path('template.data.h'),
+                         output_dir / Path('{0}{1}.h'.format(query_name, settings.DATA_SUFFIX))),
+        ]
+
+        if include_build_system:
+            for file in build_system_files:
+                with open(file.source, 'r') as template_file:
+                    output_data = string.Template(template_file.read())
+                    with open(file.destination, 'w') as output_file:
+                        output_file.write(output_data.safe_substitute(template_data))
 
         if include_test_system:
-            with open(self.template_path / 'template.run_complete_hls.tcl', 'r') as template_file:
-                hls_tcl = string.Template(template_file.read())
-                with open(output_dir / Path('run_complete_hls.tcl'), 'w') as hls_tcl_file:
-                    hls_tcl_file.write(hls_tcl.safe_substitute(template_data))
-
-            with open(self.template_path / 'template.testbench.cpp', 'r') as template_file:
-                teshbench_cpp = string.Template(template_file.read())
-                with open(output_dir / Path('{0}{1}.cpp'.format(query_name, settings.TESTBENCH_SUFFIX)),
-                          'w') as teshbench_cpp_file:
-                    teshbench_cpp_file.write(teshbench_cpp.safe_substitute(template_data))
-
-            with open(self.template_path / 'template.data.h', 'r') as template_file:
-                data_cpp = string.Template(template_file.read())
-                with open(output_dir / Path('{0}{1}.h'.format(query_name, settings.DATA_SUFFIX)),
-                          'w') as data_cpp_file:
-                    data_cpp_file.write(data_cpp.safe_substitute(template_data))
+            for file in test_system_files:
+                with open(file.source, 'r') as template_file:
+                    output_data = string.Template(template_file.read())
+                    with open(file.destination, 'w') as output_file:
+                        output_file.write(output_data.safe_substitute(template_data))
 
     def copy_files(self, source_dir: PurePath, output_dir: PurePath, file_list: List[Path]):
         if source_dir == output_dir:

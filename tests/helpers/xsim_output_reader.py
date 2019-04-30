@@ -43,8 +43,8 @@ class XSIMOutputReader():
                 length_column = False
                 col_type = pa.bool_()
                 if column[0] is not col_name:
-                    if not column[0].startswith("in_data"):
-                        colname_regex = re.compile(r"out_data_([a-zA-Z0-9_]+?)(_len)?_V")
+                    if not column[0].startswith(settings.INPUT_NAME):
+                        colname_regex = re.compile(r"{0}_([a-zA-Z0-9_]+?)(_len)?_V".format(settings.OUTPUT_NAME))
                         matches = colname_regex.match(column[0])
                         if matches:
                             col_name = matches.group(1)

@@ -45,6 +45,12 @@ class CTypesTypeMapper(object):
     def type_uint64(self, arrow_type):
         return ctypes.c_uint64
 
+    def type_timestamp_ns_(self, arrow_type):
+        return ctypes.c_uint64
+
+    def type_timestamp_us_(self, arrow_type):
+        return ctypes.c_uint64
+
     def type_timestamp_ms_(self, arrow_type):
         return ctypes.c_uint64
 

@@ -2,6 +2,7 @@ import pyarrow as pa
 
 import typed_ast.ast3 as ast
 
+from fletcherfiltering import settings
 
 class MySQLTypeMapper(object):
 
@@ -50,10 +51,16 @@ class MySQLTypeMapper(object):
 
     # TODO: figure out a way to deal with the 32-bitness of TIMESTAMP columns in SQL (UNIX standard)
     def type_timestamp_s_(self, arrow_type):
-        return "TIMESTAMP"
+        return "BIGINT UNSIGNED"
+
+    def type_timestamp_us_(self, arrow_type):
+        return "BIGINT UNSIGNED"
+
+    def type_timestamp_ns_(self, arrow_type):
+        return "BIGINT UNSIGNED"
 
     def type_string(self, arrow_type):
-        return "VARCHAR(255)"
+        return "VARCHAR({})".format(settings.VAR_LENGTH)
 
     # TODO: Maybe replace with the correct decimal column
     def type_halffloat(self, arrow_type):

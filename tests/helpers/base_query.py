@@ -44,7 +44,10 @@ class BaseQuery:
         self.cnx = cnx
         assert working_dir_base.is_dir()
         self.data = []
-        self.cursor = cnx.cursor(dictionary=True, buffered=True)
+        if self.cnx:
+            self.cursor = cnx.cursor(dictionary=True, buffered=True)
+        else:
+            self.cursor = None
         self.name = name
         self.has_data_file = has_data_file
         self.in_schema = None
@@ -59,27 +62,30 @@ class BaseQuery:
             self.working_dir = working_dir_base / test_settings.WORKSPACE_NAME
 
     def setup(self):
-        if not self.create_table():
-            if not self.drop_table():
-                pytest.fail("Could not drop table successfully.")
+        if 'sql' in test_settings.TEST_PARTS:
             if not self.create_table():
-                pytest.fail("Could not create table successfully on second try.")
+                if not self.drop_table():
+                    pytest.fail("Could not drop table successfully.")
+                if not self.create_table():
+                    pytest.fail("Could not create table successfully on second try.")
 
-        if not self.working_dir.exists():
-            self.printer("Creating workspace directory '{}'".format(self.working_dir))
-            self.working_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            if self.clean_workdir:
-                self.printer("Re-creating workspace directory '{}'".format(self.working_dir))
-                shutil.rmtree(self.working_dir)
+        if 'fletcherfiltering' in test_settings.TEST_PARTS or 'vivado' in test_settings.TEST_PARTS:
+            if not self.working_dir.exists():
+                self.printer("Creating workspace directory '{}'".format(self.working_dir))
                 self.working_dir.mkdir(parents=True, exist_ok=True)
             else:
-                self.printer("Using workspace directory '{}'".format(self.working_dir))
+                if self.clean_workdir:
+                    self.printer("Re-creating workspace directory '{}'".format(self.working_dir))
+                    shutil.rmtree(self.working_dir)
+                    self.working_dir.mkdir(parents=True, exist_ok=True)
+                else:
+                    self.printer("Using workspace directory '{}'".format(self.working_dir))
 
         if not self.has_data_file:
             self.generate_random_data()
 
-        self.insert_data()
+        if 'sql' in test_settings.TEST_PARTS:
+            self.insert_data()
 
         return True
 
@@ -113,7 +119,7 @@ class BaseQuery:
                         pytest.fail("Unsupported PK column type {} for {}".format(col.type, col.name))
                 else:
                     if col.type == pa.string():
-                        record[col.name] = str_gen.generate(maxlength=128)
+                        record[col.name] = str_gen.generate(maxlength=int(settings.VAR_LENGTH/2))
                     elif col.type == pa.int8():
                         record[col.name] = int_gen.generate(8)
                     elif col.type == pa.uint8():
@@ -130,7 +136,7 @@ class BaseQuery:
                         record[col.name] = int_gen.generate(64)
                     elif col.type == pa.uint64():
                         record[col.name] = uint_gen.generate(64)
-                    elif col.type == pa.timestamp('ms'):
+                    elif pa.types.is_timestamp(col.type):
                         record[col.name] = uint_gen.generate(64)
                     elif col.type == pa.float16():
                         record[col.name] = float_gen.generate(16)
@@ -162,13 +168,20 @@ class BaseQuery:
         return True
 
     def compile(self):
-
         self.printer("Compiling SQL to HLS C++...")
         compiler = Compiler(self.in_schema, self.out_schema)
 
         compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
                  extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH,
                  extra_link_libraries=test_settings.HLS_LIBS)
+
+        with open(self.working_dir / "in_schema.fbs", 'wb') as file:
+            s_serialized = self.in_schema.serialize()
+            file.write(s_serialized)
+
+        with open(self.working_dir / "out_schema.fbs", 'wb') as file:
+            s_serialized = self.out_schema.serialize()
+            file.write(s_serialized)
 
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
@@ -179,22 +192,23 @@ class BaseQuery:
         return schema_local_scope[schema_name]
 
     def run_fletcherfiltering(self):
-        with open(os.devnull, "w") as f:
-            redir = f
-            if not self.swallow_build_output:
-                redir = None
 
-            self.printer("Running CMake Generate...")
-            result = ProcessRunner(self.printer, ['cmake', '-G', test_settings.CMAKE_GENERATOR,
-                                                  '-DCMAKE_BUILD_TYPE={}'.format(test_settings.BUILD_CONFIG), '.'],
-                                   shell=False, cwd=self.working_dir, stdout=redir)
-            if result != 0:
-                pytest.fail("CMake Generate exited with code {}".format(result))
-            self.printer("Running CMake Build...")
-            result = ProcessRunner(self.printer, ['cmake', '--build', '.', '--config', test_settings.BUILD_CONFIG],
-                                   shell=False, cwd=self.working_dir, stdout=redir)
-            if result != 0:
-                pytest.fail("CMake Build exited with code {}".format(result))
+        if not self.swallow_build_output:
+            cmake_printer = self.printer
+        else:
+            cmake_printer = lambda val: None
+
+        self.printer("Running CMake Generate...")
+        result = ProcessRunner(cmake_printer, ['cmake', '-G', test_settings.CMAKE_GENERATOR,
+                                              '-DCMAKE_BUILD_TYPE={}'.format(test_settings.BUILD_CONFIG), '.'],
+                               shell=False, cwd=self.working_dir, stdout=redir)
+        if result != 0:
+            pytest.fail("CMake Generate exited with code {}".format(result))
+        self.printer("Running CMake Build...")
+        result = ProcessRunner(cmake_printer, ['cmake', '--build', '.', '--config', test_settings.BUILD_CONFIG],
+                               shell=False, cwd=self.working_dir, stdout=redir)
+        if result != 0:
+            pytest.fail("CMake Build exited with code {}".format(result))
 
         in_schema_type = self.build_schema_class(self.in_schema, 'In')
 
@@ -222,7 +236,7 @@ class BaseQuery:
             for col in self.in_schema:
                 if col.type == pa.string():
                     setattr(in_schema, col.name,
-                            ctypes.cast(ctypes.create_string_buffer(data_item[col.name].encode('ascii', 'replace'),
+                            ctypes.cast(ctypes.create_string_buffer(data_item[col.name].encode('utf-8', 'replace'),
                                                                     size=settings.VAR_LENGTH),
                                         ctypes.c_char_p))
                 elif col.type == pa.float16():
@@ -237,7 +251,7 @@ class BaseQuery:
                 for col in self.out_schema:
                     if col.type == pa.string():
                         try:
-                            out_data[col.name] = copy.copy(getattr(out_schema, col.name)).decode('ascii')
+                            out_data[col.name] = copy.copy(getattr(out_schema, col.name)).decode('utf-8')
                         except UnicodeDecodeError:
                             print(getattr(out_schema, col.name))
                     elif col.type == pa.float16():
@@ -277,7 +291,7 @@ class BaseQuery:
                     data_item_lst.append("{}ll".format(data_item[col.name]))
                 elif col.type == pa.uint64():
                     data_item_lst.append("{}ull".format(data_item[col.name]))
-                elif col.type == pa.timestamp('ms'):
+                elif pa.types.is_timestamp(col.type):
                     data_item_lst.append("{}ull".format(data_item[col.name]))
                 else:
                     data_item_lst.append("{}".format(data_item[col.name]))
@@ -293,21 +307,24 @@ class BaseQuery:
             data_file.seek(0)
             data_file.write(data_cpp.safe_substitute(template_data))
             data_file.truncate()
-        with open(os.devnull, "w") as f:
-            redir = f
-            if not self.swallow_build_output:
-                redir = None
-            result, sim_result = VivadoHLSProcessRunner(self.printer,
-                                                        [str(test_settings.VIVADO_BIN_DIR / 'vivado_hls.bat'), '-f',
-                                                         'run_complete_hls.tcl'],
-                                                        shell=False, cwd=self.working_dir, stdout=redir,
-                                                        env={**os.environ, **vivado_env})
-            if result != 0:
-                pytest.fail("Failed to run Vivado. Exited with code {}.".format(result))
 
-            self.printer("Vivado reported C/RTL co-simulation result: {}".format(sim_result))
+        if not self.swallow_build_output:
+            vivado_printer = self.printer
+        else:
+            vivado_printer = lambda val: None
 
-            assert sim_result == 'PASS'
+        result, sim_result = VivadoHLSProcessRunner(vivado_printer,
+                                                [str(test_settings.VIVADO_BIN_DIR / 'vivado_hls.bat'), '-f',
+                                                 'run_complete_hls.tcl'],
+                                                shell=False, cwd=self.working_dir,
+                                                env={**os.environ, **vivado_env})
+
+        if result != 0:
+            pytest.fail("Failed to run Vivado. Exited with code {}.".format(result))
+
+        self.printer("Vivado reported C/RTL co-simulation result: {}".format(sim_result))
+
+        assert sim_result == 'PASS'
 
         xor = XSIMOutputReader(self.in_schema, self.out_schema)
 
@@ -326,18 +343,24 @@ class BaseQuery:
     def run(self):
         self.compile()
 
-        self.printer("Executing query on MySQL...")
-        sql_data = self.run_sql()
-        if platform.system() == 'Darwin' or platform.system() == 'Linux':
+        if 'sql' in test_settings.TEST_PARTS:
+            self.printer("Executing query on MySQL...")
+            sql_data = self.run_sql()
+        else:
+            sql_data = None
+        if (platform.system() == 'Darwin' or platform.system() == 'Linux') and 'fletcherfiltering' in test_settings.TEST_PARTS:
             self.printer("Executing query on FletcherFiltering...")
             fletcher_data = self.run_fletcherfiltering()
         else:
             fletcher_data = None
-        if platform.system() == 'Windows' or platform.system() == 'Linux':
+        if (platform.system() == 'Windows' or platform.system() == 'Linux') and 'vivado' in test_settings.TEST_PARTS:
             self.printer("Executing query on Vivado XSIM...")
             vivado_data = self.run_vivado()
         else:
             vivado_data = None
+
+        if sql_data is None:
+            pytest.xfail("No MySQL data was gathered. Can not compare results.")
 
         if fletcher_data is None and vivado_data is None:
             pytest.xfail("No implementation data was gathered. Platform possibly unsupported.")
@@ -390,6 +413,8 @@ class BaseQuery:
                 continue
 
             if col.type == pa.float16():
+                reference[col.name] = self.clamp_float16(reference[col.name])
+                candidate[col.name] = self.clamp_float16(candidate[col.name])
                 if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT16):
                     self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
                                                                                                                test_settings.REL_TOL_FLOAT16))
@@ -408,8 +433,20 @@ class BaseQuery:
                 if not reference[col.name] == candidate[col.name]:
                     self.printer("Column {} does not have the same value in both records.".format(col.name))
                     errors += 1
-        self.printer("Record errors: {}".format(errors))
+        if errors > 0:
+            self.printer("Record errors: {}".format(errors))
         return errors == 0
+
+    @staticmethod
+    def clamp_float16(value):
+        if value > test_settings.FLOAT16_MAX:
+            return float("inf")
+        elif value < -test_settings.FLOAT16_MAX:
+            return float("-inf")
+        elif -test_settings.FLOAT16_MIN < value < test_settings.FLOAT16_MIN:
+            return 0
+
+        return value
 
     def drop_table(self):
         query = """DROP TABLE `{0}`;""".format(self.name)
