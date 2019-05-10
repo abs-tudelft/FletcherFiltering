@@ -6,7 +6,7 @@ class Combination1(BaseQuery):
     def __init__(self, printer, cnx, working_dir_base='/tmp', **kwargs):
         super().__init__(printer, cnx, working_dir_base, name=self.__class__.__name__, has_data_file=False,
                          separate_work_dir=True, **kwargs)
-        self.in_schema = pa.schema([('id', pa.int32(), False),
+        self.in_schema = pa.schema([('pkid', pa.int32(), False),
                                     ('int1', pa.int32(), False),
                                     ('int2', pa.int32(), False),
                                     ('string1', pa.string(), False),
@@ -16,7 +16,7 @@ class Combination1(BaseQuery):
                                     ('timestamp4', pa.timestamp('ns'), False)
                                     ])
 
-        self.in_schema_pk = 'id'
+        self.in_schema_pk = 'pkid'
 
         self.out_schema = pa.schema([('int1', pa.int32(), False),
                                      ('concat', pa.string(), False),

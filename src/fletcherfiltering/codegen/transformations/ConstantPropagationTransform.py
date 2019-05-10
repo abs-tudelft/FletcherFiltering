@@ -53,7 +53,7 @@ class ConstantPropagationTransform(BaseTransform):
         # Call the method as we return it
         return method(node)
 
-    def visit_BinOp(self, node: ast_nodes.BinOp) -> Union[ast_nodes.BinOp, ast_nodes.IntValue, ast_nodes.DoubleValue]:
+    def visit_BinOp(self, node: ast_nodes.BinOp) -> Union[ast_nodes.BinOp, ast_nodes.IntValue, ast_nodes.DoubleValue, ast_nodes.Reference]:
         node = self.generic_visit(node)
         debug(node)
         if isinstance(node.rhs,ast_nodes.Value) and isinstance(node.lhs,ast_nodes.Value):
@@ -62,6 +62,21 @@ class ConstantPropagationTransform(BaseTransform):
             method = getattr(self, method_name, lambda x: x)
             # Call the method as we return it
             return method(node)
+        elif isinstance(node.rhs,ast_nodes.Reference) and isinstance(node.lhs,ast_nodes.Reference):
+            if isinstance(node.op, ast_nodes.BoolOperator):
+                return node.lhs
+            else:
+                return node
+        elif (isinstance(node.rhs,ast_nodes.Reference) and isinstance(node.lhs,ast_nodes.BoolValue)) or \
+                (isinstance(node.rhs,ast_nodes.BoolValue) and isinstance(node.lhs,ast_nodes.Reference)):
+            if isinstance(node.op, ast_nodes.BoolOperator):
+                method_name = self.make_binop_name(node.op.__class__.__name__)
+                # Get the method from 'self'. Default to a lambda.
+                method = getattr(self, method_name, lambda x: x)
+                # Call the method as we return it
+                return method(node)
+            else:
+                return node
         else:
             return node
 
@@ -123,6 +138,30 @@ class ConstantPropagationTransform(BaseTransform):
         value = int(node.lhs.value) >> int(node.rhs.value)
         return ast_nodes.IntValue(value)
 
+    def binop_AndOperator(self, node: ast_nodes.BinOp) -> Union[ast_nodes.TrueValue, ast_nodes.FalseValue, ast_nodes.BinOp]:
+        if isinstance(node.lhs, ast_nodes.BoolValue) and isinstance(node.rhs, ast_nodes.BoolValue):
+            value = bool(node.lhs) and bool(node.rhs)
+            return ast_nodes.TrueValue() if value else ast_nodes.FalseValue()
+        elif isinstance(node.lhs, ast_nodes.BoolValue):
+            value = bool(node.lhs)
+            return ast_nodes.FalseValue() if not value else node.rhs  # false and x = false and true and x = x
+        elif isinstance(node.rhs, ast_nodes.BoolValue):
+            value = bool(node.rhs)
+            return ast_nodes.FalseValue() if not value else node.lhs  # false and x = false and true and x = x
+        return node
+
+    def binop_OrOperator(self, node: ast_nodes.BinOp) -> Union[ast_nodes.TrueValue, ast_nodes.FalseValue, ast_nodes.BinOp]:
+        if isinstance(node.lhs, ast_nodes.BoolValue) and isinstance(node.rhs, ast_nodes.BoolValue):
+            value = bool(node.lhs) or bool(node.rhs)
+            return ast_nodes.TrueValue() if value else ast_nodes.FalseValue()
+        elif isinstance(node.lhs, ast_nodes.BoolValue):
+            value = bool(node.lhs)
+            return ast_nodes.TrueValue() if value else node.rhs  # true or x = true and false or x = x
+        elif isinstance(node.rhs, ast_nodes.BoolValue):
+            value = bool(node.rhs)
+            return ast_nodes.TrueValue() if value else node.lhs  # true or x = true and false or x = x
+        return node
+
     def binop_BitAndOperator(self, node: ast_nodes.BinOp) -> ast_nodes.IntValue:
         value = int(node.lhs.value) & int(node.rhs.value)
         return ast_nodes.IntValue(value)
@@ -138,3 +177,4 @@ class ConstantPropagationTransform(BaseTransform):
     def unop_BitNotOperator(self, node: ast_nodes.UnOp) -> ast_nodes.IntValue:
         value = ~int(node.rhs.value)
         return ast_nodes.IntValue(value)
+

@@ -1,6 +1,6 @@
 from .compiler import Compiler
 from .. import settings
-
+from pathlib import Path
 import os
 import os.path
 
@@ -49,4 +49,4 @@ if __name__ == "__main__":
     if len(args.query_str) < settings.MINIMAL_QUERY_LENGTH:
         raise QueryTooShort()
 
-    compiler(query_str=args.query_str, query_name=args.query_name, output_dir=args.output_dir)
+    compiler(query_str=args.query_str, query_name=args.query_name, output_dir=Path(args.output_dir))

@@ -35,7 +35,7 @@ import platform
 import struct
 import string
 import math
-
+import random
 
 class BaseQuery:
     def __init__(self, printer, cnx, working_dir_base: Path, name='query', has_data_file=False, separate_work_dir=False,
@@ -119,7 +119,7 @@ class BaseQuery:
                         pytest.fail("Unsupported PK column type {} for {}".format(col.type, col.name))
                 else:
                     if col.type == pa.string():
-                        record[col.name] = str_gen.generate(maxlength=int(settings.VAR_LENGTH/2))
+                        record[col.name] = str_gen.generate(maxlength=int(settings.VAR_LENGTH / 2))
                     elif col.type == pa.int8():
                         record[col.name] = int_gen.generate(8)
                     elif col.type == pa.uint8():
@@ -146,6 +146,9 @@ class BaseQuery:
                         record[col.name] = float_gen.generate(64)
                     else:
                         pytest.fail("Unsupported column type {} for {}".format(col.type, col.name))
+                    if col.nullable:
+                        if random.random()<test_settings.NULLPROBABILITY:
+                            record[col.name] = None
             self.data.append(record)
 
     def insert_data(self):
@@ -175,14 +178,6 @@ class BaseQuery:
                  extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH,
                  extra_link_libraries=test_settings.HLS_LIBS)
 
-        with open(self.working_dir / "in_schema.fbs", 'wb') as file:
-            s_serialized = self.in_schema.serialize()
-            file.write(s_serialized)
-
-        with open(self.working_dir / "out_schema.fbs", 'wb') as file:
-            s_serialized = self.out_schema.serialize()
-            file.write(s_serialized)
-
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
         schema_ast = python_class_generator.get_class_ast(schema, schema_name)
@@ -200,13 +195,13 @@ class BaseQuery:
 
         self.printer("Running CMake Generate...")
         result = ProcessRunner(cmake_printer, ['cmake', '-G', test_settings.CMAKE_GENERATOR,
-                                              '-DCMAKE_BUILD_TYPE={}'.format(test_settings.BUILD_CONFIG), '.'],
-                               shell=False, cwd=self.working_dir, stdout=redir)
+                                               '-DCMAKE_BUILD_TYPE={}'.format(test_settings.BUILD_CONFIG), '.'],
+                               shell=False, cwd=self.working_dir)
         if result != 0:
             pytest.fail("CMake Generate exited with code {}".format(result))
         self.printer("Running CMake Build...")
         result = ProcessRunner(cmake_printer, ['cmake', '--build', '.', '--config', test_settings.BUILD_CONFIG],
-                               shell=False, cwd=self.working_dir, stdout=redir)
+                               shell=False, cwd=self.working_dir)
         if result != 0:
             pytest.fail("CMake Build exited with code {}".format(result))
 
@@ -280,21 +275,33 @@ class BaseQuery:
             data_item_lst = []
             for col in self.in_schema:
                 if col.type == pa.string():
-                    data_item_lst.append("\"{}\"".format(data_item[col.name]))
+                    data_item_text = "\"{}\"".format(data_item[col.name])
                 elif col.type == pa.bool_():
-                    data_item_lst.append("{}".format('true' if data_item[col.name] else 'false'))
+                    data_item_text = "{}".format('true' if data_item[col.name] else 'false')
                 elif col.type == pa.float32():
-                    data_item_lst.append("{}f".format(data_item[col.name]))
+                    data_item_text = "{}f".format(data_item[col.name])
                 elif col.type == pa.uint8() or col.type == pa.uint16() or col.type == pa.uint32():
-                    data_item_lst.append("{}u".format(data_item[col.name]))
+                    data_item_text = "{}u".format(data_item[col.name])
                 elif col.type == pa.int64():
-                    data_item_lst.append("{}ll".format(data_item[col.name]))
+                    data_item_text = "{}ll".format(data_item[col.name])
                 elif col.type == pa.uint64():
-                    data_item_lst.append("{}ull".format(data_item[col.name]))
+                    data_item_text = "{}ull".format(data_item[col.name])
                 elif pa.types.is_timestamp(col.type):
-                    data_item_lst.append("{}ull".format(data_item[col.name]))
+                    data_item_text = "{}ull".format(data_item[col.name])
                 else:
-                    data_item_lst.append("{}".format(data_item[col.name]))
+                    data_item_text = "{}".format(data_item[col.name])
+                if col.nullable:
+                    if data_item[col.name] is not None:
+                        data_item_lst.append("{{{0}, true}}".format(data_item_text))
+                    else:
+                        if col.type == pa.string():
+                            default_value = "\"\""
+                        else:
+                            default_value = "0"
+                        data_item_lst.append("{{{0}, false}}".format(default_value))
+                else:
+                    data_item_lst.append(data_item_text)
+
             data_placeholder.append(", ".join(data_item_lst))
 
         template_data = {
@@ -314,10 +321,10 @@ class BaseQuery:
             vivado_printer = lambda val: None
 
         result, sim_result = VivadoHLSProcessRunner(vivado_printer,
-                                                [str(test_settings.VIVADO_BIN_DIR / 'vivado_hls.bat'), '-f',
-                                                 'run_complete_hls.tcl'],
-                                                shell=False, cwd=self.working_dir,
-                                                env={**os.environ, **vivado_env})
+                                                    [str(test_settings.VIVADO_BIN_DIR / 'vivado_hls.bat'), '-f',
+                                                     'run_complete_hls.tcl'],
+                                                    shell=False, cwd=self.working_dir,
+                                                    env={**os.environ, **vivado_env})
 
         if result != 0:
             pytest.fail("Failed to run Vivado. Exited with code {}.".format(result))
@@ -348,7 +355,8 @@ class BaseQuery:
             sql_data = self.run_sql()
         else:
             sql_data = None
-        if (platform.system() == 'Darwin' or platform.system() == 'Linux') and 'fletcherfiltering' in test_settings.TEST_PARTS:
+        if (
+                platform.system() == 'Darwin' or platform.system() == 'Linux') and 'fletcherfiltering' in test_settings.TEST_PARTS:
             self.printer("Executing query on FletcherFiltering...")
             fletcher_data = self.run_fletcherfiltering()
         else:
@@ -412,6 +420,19 @@ class BaseQuery:
                 errors += 1
                 continue
 
+            if col.type == pa.int16() or col.type == pa.uint16():
+                reference[col.name] = self.clamp_int16(reference[col.name])
+                candidate[col.name] = self.clamp_int16(candidate[col.name])
+            elif col.type == pa.int8() or col.type == pa.uint8():
+                reference[col.name] = self.clamp_int8(reference[col.name])
+                candidate[col.name] = self.clamp_int8(candidate[col.name])
+            elif col.type == pa.int32() or col.type == pa.uint32():
+                reference[col.name] = self.clamp_int32(reference[col.name])
+                candidate[col.name] = self.clamp_int32(candidate[col.name])
+            elif col.type == pa.int64() or col.type == pa.uint64():
+                reference[col.name] = self.clamp_int64(reference[col.name])
+                candidate[col.name] = self.clamp_int64(candidate[col.name])
+
             if col.type == pa.float16():
                 reference[col.name] = self.clamp_float16(reference[col.name])
                 candidate[col.name] = self.clamp_float16(candidate[col.name])
@@ -439,6 +460,8 @@ class BaseQuery:
 
     @staticmethod
     def clamp_float16(value):
+        if value is None:
+            return value
         if value > test_settings.FLOAT16_MAX:
             return float("inf")
         elif value < -test_settings.FLOAT16_MAX:
@@ -447,6 +470,30 @@ class BaseQuery:
             return 0
 
         return value
+
+    @staticmethod
+    def clamp_int64(value):
+        if value is None:
+            return value
+        return value & 0xFFFFFFFFFFFFFFFF
+
+    @staticmethod
+    def clamp_int32(value):
+        if value is None:
+            return value
+        return value & 0xFFFFFFFF
+
+    @staticmethod
+    def clamp_int16(value):
+        if value is None:
+            return value
+        return value & 0xFFFF
+
+    @staticmethod
+    def clamp_int8(value):
+        if value is None:
+            return value
+        return value & 0xFF
 
     def drop_table(self):
         query = """DROP TABLE `{0}`;""".format(self.name)

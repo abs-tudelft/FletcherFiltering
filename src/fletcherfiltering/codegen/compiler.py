@@ -7,7 +7,7 @@ import horast as horast
 import moz_sql_parser as msp
 
 import string
-
+import os
 from pathlib import Path, PurePath
 from typing import List
 
@@ -68,12 +68,7 @@ class Compiler(object):
         self.template_path = Path(__file__).resolve().parent / 'templates'
 
     def verify_schemas(self):
-        for col in self.in_schema:
-            if col.nullable:
-                raise ValueError("Nullable columns in the input schema are not supported at this time.")
-        for col in self.out_schema:
-            if col.nullable:
-                raise ValueError("Nullable columns in the output schema are not supported at this time.")
+        pass
 
     def __call__(self, query_str: str, output_dir: Path = Path('.'), query_name: str = 'query',
                  include_build_system: bool = True, include_test_system: bool = True,
@@ -83,6 +78,10 @@ class Compiler(object):
         assert isinstance(query_str, str)
 
         queries = self.parse(query_str)
+
+        # if len(queries):
+        #     if not output_dir.exists():
+        #         output_dir.mkdir(parents=True)
 
         generated_files = []
         counter = 0
@@ -101,7 +100,7 @@ class Compiler(object):
 
         tb_new = 'out.{0} = new char[{1}];'
 
-        out_str_columns = [x.name for x in self.out_schema if x.type == pa.string()]
+        out_str_columns = [x.name if not x.nullable else x.name+'.value' for x in self.out_schema if x.type == pa.string()]
 
         template_data = {
             'VAR_LENGTH': settings.VAR_LENGTH,
@@ -143,6 +142,17 @@ class Compiler(object):
                     with open(file.destination, 'w') as output_file:
                         output_file.write(output_data.safe_substitute(template_data))
 
+            # Add metadata for fletchgen
+            self.in_schema.add_metadata({'fletcher_mode': 'read', 'fletcher_name': settings.INPUT_NAME})
+            self.out_schema.add_metadata({'fletcher_mode': 'write', 'fletcher_name': settings.OUTPUT_NAME})
+            with open((output_dir / "{}.fbs".format(settings.INPUT_NAME)), 'wb') as file:
+                s_serialized = self.in_schema.serialize()
+                file.write(s_serialized)
+
+            with open((output_dir / "{}.fbs".format(settings.OUTPUT_NAME)), 'wb') as file:
+                s_serialized = self.out_schema.serialize()
+                file.write(s_serialized)
+
         if include_test_system:
             for file in test_system_files:
                 with open(file.source, 'r') as template_file:
@@ -170,6 +180,11 @@ class Compiler(object):
 
         header_ast, general_ast, header_test_ast, general_test_ast = self.python_ast_transform.transform(query,
                                                                                                          query_name=query_name)
+
+        #header_ast = self.nullables_transform.transform(header_ast)
+        #general_ast = self.nullables_transform.transform(general_ast)
+        #header_test_ast = self.nullables_transform.transform(header_ast)
+        #general_test_ast = self.nullables_transform.transform(general_test_ast)
 
         if isinstance(header_ast, ast.AST):
             debug(horast.dump(header_ast))

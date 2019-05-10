@@ -15,7 +15,7 @@ class ConcatTransform(BaseTransform):
 
     def visit_FunctionCall(self, node: ast_nodes.FunctionCall) -> ast_nodes.FunctionCall:
         debug(node)
-        if node.func == 'CONCAT':
+        if node.func.lower() == 'concat':
             new_params = []
             for param in node.params:
                 method = 'param_' + param.__class__.__name__
@@ -52,7 +52,7 @@ class ConcatTransform(BaseTransform):
             raise UnsupportedArgumentTypeError()
 
         if col.type in settings.VAR_LENGTH_TYPES:
-            return [node, ast_nodes.IntermediaryReference(id=col.name + settings.LENGTH_SUFFIX)]
+            return [node, ast_nodes.IntermediaryReference(id=col.name + settings.LENGTH_SUFFIX, is_value_reference=node.is_value_reference)]
 
     def param_TrueValue(self, node: ast_nodes.TrueValue) -> list:
         debug(node)

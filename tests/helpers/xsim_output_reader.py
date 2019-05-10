@@ -12,6 +12,17 @@ class XSIMOutputReader():
         self.in_schema = in_schema
         self.out_schema = out_schema
 
+    def collapse_valid_column(self, d:dict, col_name: str, grab_from_length_column:bool = False):
+        source_name = col_name + (settings.LENGTH_SUFFIX if grab_from_length_column else '') + settings.VALID_SUFFIX
+        assert source_name in d
+
+        if d[source_name] == False:
+            d[col_name] = None
+
+        del d[source_name]
+        return d
+
+
     def read(self, data_path: PurePath, query_name: str):
         # print("Reading....")
 
@@ -41,14 +52,27 @@ class XSIMOutputReader():
             for column in columns:
                 col_name = 'ap_return'
                 length_column = False
+                valid_column = False
+                nullable_column = True
                 col_type = pa.bool_()
                 if column[0] is not col_name:
                     if not column[0].startswith(settings.INPUT_NAME):
-                        colname_regex = re.compile(r"{0}_([a-zA-Z0-9_]+?)(_len)?_V".format(settings.OUTPUT_NAME))
+                        colname_regex = re.compile(r"{0}_([a-zA-Z0-9_]+?)(_len)?_V_?([a-zA-Z]+)?".format(settings.OUTPUT_NAME))
                         matches = colname_regex.match(column[0])
                         if matches:
                             col_name = matches.group(1)
-                            if matches.group(2) == settings.LENGTH_SUFFIX:
+                            col_name_suffix = matches.group(3)
+                            if col_name_suffix == 'value':
+                                assert self.out_schema.field_by_name(col_name).nullable
+                                nullable_column = True
+                            if col_name_suffix == 'valid' and matches.group(2) == settings.LENGTH_SUFFIX:
+                                col_type = settings.VALID_TYPE
+                                valid_column = True
+                                length_column = True
+                            elif col_name_suffix == 'valid':
+                                col_type = settings.VALID_TYPE
+                                valid_column = True
+                            elif matches.group(2) == settings.LENGTH_SUFFIX:
                                 col_type = settings.LENGTH_TYPE
                                 length_column = True
                             else:
@@ -56,18 +80,27 @@ class XSIMOutputReader():
                     # else:
                     # print("Input column {}, skipping.".format(column))
 
-                c_data_out_file = data_path / Path(cdata_out_filename_template.format(query_name, column[0]))
+                suffix = ''
+                if length_column:
+                    suffix += settings.LENGTH_SUFFIX
+                if valid_column:
+                    suffix += settings.VALID_SUFFIX
+
+                #c_data_out_file = data_path / Path(cdata_out_filename_template.format(query_name, column[0]))
                 rtl_data_out_file = data_path / Path(rtldata_out_filename_template.format(query_name, column[0]))
-                exists_cdatafile = c_data_out_file.is_file()
-                if exists_cdatafile:
-                    with open(c_data_out_file, 'r') as c_datafile:
-                        data = self.read_datafile(c_datafile, total_transactions, struct_type_mapper.resolve(col_type))
-                        out_data = self.merge_column(out_data, data,
-                                                     col_name + (settings.LENGTH_SUFFIX if length_column else ''))
+                if rtl_data_out_file.is_file():
+                    with open(rtl_data_out_file, 'r') as rtl_datafile:
+                        data = self.read_datafile(rtl_datafile, total_transactions, struct_type_mapper.resolve(col_type))
+                        out_data = self.merge_column(out_data, data, col_name + suffix)
 
             # Remove LENGTH columns from output and also filter on the query return value.
             out_data = [{k: v for (k, v) in d.items() if k != 'ap_return' and not k.endswith(settings.LENGTH_SUFFIX)}
                         for d in out_data if d['ap_return']]
+
+            for col in self.out_schema:
+                if col.nullable:
+                    out_data = list(map(lambda d: self.collapse_valid_column(d, col.name, col.type in settings.VAR_LENGTH_TYPES), out_data))
+
 
         return out_data
 

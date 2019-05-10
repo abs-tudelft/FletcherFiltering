@@ -1,20 +1,23 @@
 from tests.helpers.xsim_output_reader import XSIMOutputReader
 import pyarrow as pa
+from pathlib import Path
 
 if __name__ == '__main__':
-    in_schema = pa.schema([('id', pa.int32(), False),
-                                ('string1', pa.string(), False),
-                                ('half1', pa.float16(), False),
-                                ('float1', pa.float32(), False),
-                                ('double1', pa.float64(), False)])
+    in_schema = pa.schema([('pkid', pa.int32(), False),
+                                ('nullint', pa.int32(), True),
+                                ('string1', pa.string(), True)])
 
-    in_schema_pk = 'id'
+    in_schema_pk = 'pkid'
 
-    out_schema = pa.schema([('concat', pa.string(), False),
-                                 ('concat2', pa.string(), False)])
+    out_schema = pa.schema([('pkid', pa.int32(), False),
+                                 ('nullint', pa.int32(), True),
+                                 ('string1', pa.string(), True),
+                                 ('pkid2', pa.int32(), False),
+                                 ('nullint2', pa.int32(), True),
+                                 ('concat', pa.string(), True)])
 
     xor = XSIMOutputReader(in_schema, out_schema)
 
-    data = xor.read('fletcherfiltering_test_workspace/Combination2/Combination2/automated_tests/sim/tv','Combination2')
+    data = xor.read(Path('fletcherfiltering_test_workspace/Nullable/Nullable/automated_tests/sim/tv'),'Nullable')
     #print("Transactions: ", num)
     print(data)

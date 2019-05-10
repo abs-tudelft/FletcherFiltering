@@ -1,5 +1,6 @@
 import pyarrow as pa
 from collections import namedtuple
+import copy
 
 import typed_ast.ast3 as ast
 
@@ -80,12 +81,26 @@ class FunctionResolver(object):
         offset_value_ast = ast.Name(id=offset_ref_name, ctx=ast.Load())
         extra_ast.append(make_comment("pragma HLS INLINE REGION"))
         for arg, arg_len in grouped(func_ast.args,2):
+            if isinstance(arg_len, ast.Attribute):
+                if arg_len.attr == 'value':
+                    arg_valid = copy.deepcopy(arg_len)
+                    arg_valid.attr = 'valid'
+                    extra_ast.append(
+                        ast.Expr(
+                            value=ast.Call(
+                            func=func_ast.func,
+                            args=[buffer_ast,offset_value_ast,arg,arg_len, arg_valid],
+                            keywords=[])
+                        )
+                    )
+                    continue
+
             extra_ast.append(
                 ast.Expr(
                     value=ast.Call(
-                    func=func_ast.func,
-                    args=[buffer_ast,offset_value_ast,arg,arg_len],
-                    keywords=[])
+                        func=func_ast.func,
+                        args=[buffer_ast, offset_value_ast, arg, arg_len],
+                        keywords=[])
                 )
             )
 

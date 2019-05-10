@@ -14,6 +14,8 @@ REL_TOL_FLOAT64 = 1e-9 # digits for double float: 15.95
 FLOAT16_MAX = 65504.0
 FLOAT16_MIN = 0.000061035
 
+NULLPROBABILITY = 0.10
+
 MYSQL_USER='fletcherfiltering'
 MYSQL_PASSWORD='pfUcFN4S9Qq7X6NDBMHk'
 MYSQL_HOST='127.0.0.1'
@@ -29,7 +31,7 @@ if platform.system() == "Windows":
     HLS_LINK_PATH = [VIVADO_DIR / Path('win64/tools/fpo_v7_0')]
     HLS_LIBS = ['libgmp', 'libmpfr', 'libIp_floating_point_v7_0_bitacc_cmodel']
 elif platform.system() == "Darwin":
-    TEST_PARTS = ['sql', 'fletcherfiltering']
+    TEST_PARTS = []
     CMAKE_GENERATOR = 'Ninja'
     VIVADO_DIR = Path('/Users/erwin/Xilinx/Vivado/2018.3')
     VIVADO_BIN_DIR = VIVADO_DIR / 'bin'
