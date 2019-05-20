@@ -1,4 +1,4 @@
-#moz-sql-parser
+https://github.com/EraYaN/moz-sql-parser/archive/object-ast.zip
 typed-ast
 pandas
 pyarrow
@@ -6,4 +6,4 @@ numpy
 horast
 astunparse
 typed-astunparse
-#transpyle[c,cpp]
+https://github.com/EraYaN/transpyle/archive/sql-to-cpp.zip[c,cpp]
