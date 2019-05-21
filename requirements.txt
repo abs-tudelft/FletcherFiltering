@@ -1,6 +1,5 @@
 https://github.com/EraYaN/moz-sql-parser/archive/object-ast.zip
 typed-ast
-pandas
 pyarrow
 numpy
 horast

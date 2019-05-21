@@ -1,5 +1,9 @@
 import pyarrow as pa
 
+from version_query import predict_version_str
+
+__version__ = predict_version_str()
+
 DEBUG = False
 
 MINIMAL_QUERY_LENGTH = len('SELECT *')

@@ -1,2 +1,2 @@
 # FletcherFiltering
-SQL to HLS hardware filtering for Flechter streams
+SQL to HLS compiler that generates hardware filters and transformations for [Flechter](https://github.com/johanpel/fletcher) streams.

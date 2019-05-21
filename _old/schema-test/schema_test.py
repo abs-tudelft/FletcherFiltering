@@ -1,13 +1,5 @@
-import numpy as np
-
-import pandas as pd
-
 import pyarrow as pa
 
-import pyarrow.parquet as parquet
- 
-
-  
 if __name__ == "__main__":
     in_schema = pa.schema([('id', pa.int32(), False),
                            ('int1', pa.int32(), False),
