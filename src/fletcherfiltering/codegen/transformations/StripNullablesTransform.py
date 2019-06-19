@@ -63,14 +63,14 @@ class StripNullablesTransform(BaseTransform):
         return tree
 
     def visit_ColumnReference(self, node: ast_nodes.ColumnReference) -> ast_nodes.ColumnReference:
-        node.is_value_reference = False
+        #node.is_value_reference = False
         node.is_valid_reference = True
         if not node.id.endswith(settings.LENGTH_SUFFIX) and self.is_varlength_col(node.id):
             node.id += settings.LENGTH_SUFFIX
         return node
 
     def visit_IntermediaryReference(self, node: ast_nodes.IntermediaryReference) -> ast_nodes.IntermediaryReference:
-        node.is_value_reference = False
+        #node.is_value_reference = False
         node.is_valid_reference = True
         if not node.id.endswith(settings.LENGTH_SUFFIX) and self.is_varlength_col(node.id):
             node.id += settings.LENGTH_SUFFIX

@@ -7,6 +7,7 @@ import pyarrow as pa
 from .BaseTransform import BaseTransform
 from .. import debug, settings
 from .helpers import make_comment
+from .helpers.ArrowTestTypeResolver import ArrowTestTypeResolver
 from .helpers.ArrowTypeResolver import ArrowTypeResolver
 from .helpers.FunctionResolver import FunctionResolver, PrePostAST
 from ..exceptions import *
@@ -20,6 +21,7 @@ class PythonASTTransform(BaseTransform):
         self.in_schema = in_schema
         self.out_schema = out_schema
         self.type_resolver = ArrowTypeResolver()
+        self.test_type_resolver = ArrowTestTypeResolver()
         self.func_resolver = FunctionResolver()
         self.strip_nullables_transform = StripNullablesTransform(self.in_schema, self.out_schema)
         self.constant_propagation_transform = ConstantPropagationTransform(self.in_schema, self.out_schema)
@@ -30,27 +32,27 @@ class PythonASTTransform(BaseTransform):
         return self.visit(node)
 
     # region Basic Helpers
-    def apply_value_reference(self, node):
-        if isinstance(node, ast_nodes.ColumnReference):
-            if not node.is_valid_reference:
-                col_name = node.id
-                col = self.in_schema.field_by_name(col_name)
-                if col.nullable and col.type not in settings.VAR_LENGTH_TYPES:
-                    node.is_value_reference = True
-
-
-        elif isinstance(node, ast_nodes.IntermediaryReference):
-            if not node.is_valid_reference:
-                col_name = node.id
-                length_stream = False
-                if col_name.endswith(settings.LENGTH_SUFFIX):
-                    col_name = col_name[0:-len(settings.LENGTH_SUFFIX)]
-                    length_stream = True
-
-                col = self.in_schema.field_by_name(col_name)
-                if col.nullable and (col.type not in settings.VAR_LENGTH_TYPES or length_stream):
-                    node.is_value_reference = True
-        return node
+    # def apply_value_reference(self, node):
+    #     if isinstance(node, ast_nodes.ColumnReference):
+    #         if not node.is_valid_reference:
+    #             col_name = node.id
+    #             col = self.in_schema.field_by_name(col_name)
+    #             if col.nullable and col.type not in settings.VAR_LENGTH_TYPES:
+    #                 node.is_value_reference = True
+    #
+    #
+    #     elif isinstance(node, ast_nodes.IntermediaryReference):
+    #         if not node.is_valid_reference:
+    #             col_name = node.id
+    #             length_stream = False
+    #             if col_name.endswith(settings.LENGTH_SUFFIX):
+    #                 col_name = col_name[0:-len(settings.LENGTH_SUFFIX)]
+    #                 length_stream = True
+    #
+    #             col = self.in_schema.field_by_name(col_name)
+    #             if col.nullable and (col.type not in settings.VAR_LENGTH_TYPES or length_stream):
+    #                 node.is_value_reference = True
+    #     return node
 
     # endregion
 
@@ -59,16 +61,21 @@ class PythonASTTransform(BaseTransform):
     def get_schema_ast(self, schema: pa.Schema, schema_name: str = "schema", test_data=False,
                        is_input=False) -> ast.Expr:
         schema_ast = []
+
+        type_resolver = self.type_resolver
+        if test_data:
+            type_resolver = self.test_type_resolver
+
         for col in schema:
             col_def = ast.AnnAssign(
                 target=ast.Name(
                     id=col.name,
                     ctx=ast.Store()),
-                annotation=self.type_resolver.resolve(arrow_type=col.type, as_stream=not test_data,
-                                                      as_nullable=col.nullable and (
-                                                              col.type not in settings.VAR_LENGTH_TYPES or test_data),
-                                                      as_pointer=(test_data and col.type in settings.VAR_LENGTH_TYPES),
-                                                      as_const=col.type == pa.string() and test_data and is_input),
+                annotation=type_resolver.resolve(arrow_type=col.type, as_stream=not test_data,
+                                                 as_nullable=col.nullable and (
+                                                         col.type not in settings.VAR_LENGTH_TYPES or test_data),
+                                                 as_pointer=(test_data and col.type in settings.VAR_LENGTH_TYPES),
+                                                 as_const=col.type == pa.string() and test_data and is_input),
                 value=None,
                 simple=1)
             schema_ast.append(col_def)
@@ -78,20 +85,20 @@ class PythonASTTransform(BaseTransform):
                     target=ast.Name(
                         id=col.name + settings.LENGTH_SUFFIX,
                         ctx=ast.Store()),
-                    annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE, as_nullable=col.nullable,
-                                                          as_stream=not test_data),
+                    annotation=type_resolver.resolve(arrow_type=settings.LENGTH_TYPE, as_nullable=col.nullable,
+                                                     as_stream=not test_data),
                     value=None,
                     simple=1)
                 schema_ast.append(col_def_len)
 
-        return ast.Expr(ast.ClassDef(
+        return ast.ClassDef(
             name=schema_name,
             bases=[],
             keywords=[],
             body=schema_ast,
             decorator_list=[ast.Name(
                 id='struct',
-                ctx=ast.Load())]))
+                ctx=ast.Load())])
 
     def get_load_schema_ast(self, schema: pa.Schema):
         schema_ast = []
@@ -126,14 +133,14 @@ class PythonASTTransform(BaseTransform):
                 value=None,
                 simple=1)
             if col.type in settings.VAR_LENGTH_TYPES:
+                col_len_var = ast.Attribute(
+                    value=ast.Name(
+                        id=col.name + settings.LENGTH_SUFFIX,
+                        ctx=ast.Load()
+                    ),
+                    attr='data',
+                    ctx=ast.Load())
                 if col.nullable:
-                    col_len_var = ast.Attribute(
-                        value=ast.Name(
-                            id=col.name + settings.LENGTH_SUFFIX,
-                            ctx=ast.Load()
-                        ),
-                        attr='value',
-                        ctx=ast.Load())
                     col_len_var_valid = ast.Attribute(
                         value=ast.Name(
                             id=col.name + settings.LENGTH_SUFFIX,
@@ -142,9 +149,8 @@ class PythonASTTransform(BaseTransform):
                         attr='valid',
                         ctx=ast.Load())
                 else:
-                    col_len_var_valid = col_len_var = ast.Name(
-                        id=col.name + settings.LENGTH_SUFFIX,
-                        ctx=ast.Load())
+                    col_len_var_valid = col_len_var
+
                 col_load = ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
@@ -238,7 +244,7 @@ class PythonASTTransform(BaseTransform):
                         ),
                         attr=col.name,
                         ctx=ast.Load()),
-                    attr='value',
+                    attr='data',
                     ctx=ast.Load())
                 col_var_valid = ast.Attribute(
                     value=ast.Attribute(
@@ -267,11 +273,15 @@ class PythonASTTransform(BaseTransform):
                             id=col.name + settings.LENGTH_SUFFIX,
                             ctx=ast.Load()
                         ),
-                        attr='value',
+                        attr='data',
                         ctx=ast.Load())
                 else:
-                    col_len_var = ast.Name(
-                        id=col.name + settings.LENGTH_SUFFIX,
+                    col_len_var = ast.Attribute(
+                        value=ast.Name(
+                            id=col.name + settings.LENGTH_SUFFIX,
+                            ctx=ast.Load()
+                        ),
+                        attr='data',
                         ctx=ast.Load())
 
                 col_load = ast.For(
@@ -296,13 +306,18 @@ class PythonASTTransform(BaseTransform):
                                   attr=col.name,
                                   ctx=ast.Load()),
                               op=ast.LShift(),
-                              right=ast.Subscript(
-                                  value=col_var_value,
-                                  slice=ast.Index(ast.Name(
-                                      id='i',
-                                      ctx=ast.Load()
-                                  )),
-                                  ctx=ast.Store()
+                              right=ast.Call(
+                                  func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable and col.type not in settings.VAR_LENGTH_TYPES),
+                                  args=[
+                                      ast.Subscript(
+                                          value=col_var_value,
+                                          slice=ast.Index(ast.Name(
+                                              id='i',
+                                              ctx=ast.Load()
+                                          )),
+                                          ctx=ast.Store()
+                                      )],
+                                  keywords=[]
                               ),
                               type_comment=None)
                           )],
@@ -327,12 +342,18 @@ class PythonASTTransform(BaseTransform):
                         attr=col.name,
                         ctx=ast.Load()),
                     op=ast.LShift(),
-                    right=ast.Attribute(
-                        value=ast.Name(
-                            id=settings.INPUT_NAME + settings.TEST_SUFFIX,
-                            ctx=ast.Load()),
-                        attr=col.name,
-                        ctx=ast.Load()),
+                    right=ast.Call(
+                        func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
+                        args=[
+                            ast.Attribute(
+                                value=ast.Name(
+                                    id=settings.INPUT_NAME + settings.TEST_SUFFIX,
+                                    ctx=ast.Load()),
+                                attr=col.name,
+                                ctx=ast.Load())
+                        ],
+                        keywords=[]
+                    ),
                     type_comment=None))
 
             col_def_len_args = [ast.Call(
@@ -346,16 +367,16 @@ class PythonASTTransform(BaseTransform):
                 keywords=[])]
 
             if col.nullable:
-                col_def_len_args.append(
+                col_def_len_args.insert(0,
                     col_var_valid
                 )
 
             col_def_len = ast.AnnAssign(
                 target=ast.Call(
-                    func=ast.Name(id=col.name + settings.LENGTH_SUFFIX,
-                                  ctx=ast.Load()),
+                    func=ast.Name(id=col.name + settings.LENGTH_SUFFIX, ctx=ast.Load()),
                     args=col_def_len_args,
-                    keywords=[]),
+                    keywords=[]
+                ),
                 annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE, as_nullable=col.nullable),
                 value=None,
                 simple=1)
@@ -386,14 +407,14 @@ class PythonASTTransform(BaseTransform):
             col_name_code = col.name + settings.OUTPUT_SUFFIX
 
             if col.type in settings.VAR_LENGTH_TYPES:
+                col_len_var = ast.Attribute(
+                    value=ast.Name(
+                        id=col_name_code + settings.LENGTH_SUFFIX,
+                        ctx=ast.Load()
+                    ),
+                    attr='data',
+                    ctx=ast.Load())
                 if col.nullable:
-                    col_len_var = ast.Attribute(
-                        value=ast.Name(
-                            id=col_name_code + settings.LENGTH_SUFFIX,
-                            ctx=ast.Load()
-                        ),
-                        attr='value',
-                        ctx=ast.Load())
                     col_len_var_valid = ast.Attribute(
                         value=ast.Name(
                             id=col_name_code + settings.LENGTH_SUFFIX,
@@ -402,9 +423,7 @@ class PythonASTTransform(BaseTransform):
                         attr='valid',
                         ctx=ast.Load())
                 else:
-                    col_len_var_valid = col_len_var = ast.Name(
-                        id=col_name_code + settings.LENGTH_SUFFIX,
-                        ctx=ast.Load())
+                    col_len_var_valid = col_len_var
 
                 output_col_ast = ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
@@ -504,7 +523,7 @@ class PythonASTTransform(BaseTransform):
                         ),
                         attr=col.name,
                         ctx=ast.Load()),
-                    attr='value',
+                    attr='data',
                     ctx=ast.Load())
                 col_var_valid = ast.Attribute(
                     value=ast.Attribute(
@@ -525,14 +544,14 @@ class PythonASTTransform(BaseTransform):
                     attr=col.name,
                     ctx=ast.Load())
             if col.type in settings.VAR_LENGTH_TYPES:
+                col_len_var = ast.Attribute(
+                    value=ast.Name(
+                        id=col_name_code + settings.LENGTH_SUFFIX,
+                        ctx=ast.Load()
+                    ),
+                    attr='data',
+                    ctx=ast.Load())
                 if col.nullable:
-                    col_len_var = ast.Attribute(
-                        value=ast.Name(
-                            id=col_name_code + settings.LENGTH_SUFFIX,
-                            ctx=ast.Load()
-                        ),
-                        attr='value',
-                        ctx=ast.Load())
                     col_len_var_valid = ast.Attribute(
                         value=ast.Name(
                             id=col_name_code + settings.LENGTH_SUFFIX,
@@ -541,10 +560,8 @@ class PythonASTTransform(BaseTransform):
                         attr='valid',
                         ctx=ast.Load())
                 else:
-                    col_len_var = ast.Name(
-                        id=col_name_code + settings.LENGTH_SUFFIX,
-                        ctx=ast.Load())
-                output_col_ast = ast.For(
+                    col_len_var_valid = col_len_var
+                output_col_ast = [ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
                         func=ast.Name(
@@ -567,33 +584,38 @@ class PythonASTTransform(BaseTransform):
                                   attr=col.name,
                                   ctx=ast.Store()),
                               op=ast.RShift(),
-                              right=ast.Subscript(
-                                  value=col_var_value,
-                                  slice=ast.Index(ast.Name(
-                                      id='i',
-                                      ctx=ast.Load()
-                                  )),
+                              right=ast.Name(
+                                  id=col_name_code,
                                   ctx=ast.Load()
                               ),
-                              type_comment=None))
+                              type_comment=None)),
+                          ast.Assign(
+                              targets=[
+                                  ast.Subscript(
+                                      value=col_var_value,
+                                      slice=ast.Index(ast.Name(
+                                          id='i',
+                                          ctx=ast.Load()
+                                      )),
+                                      ctx=ast.Load()
+                                  )
+                              ],
+                              value=
+                              ast.Attribute(
+                                  value=ast.Name(
+                                      id=col_name_code,
+                                      ctx=ast.Load()),
+                                  attr='data',
+                                  ctx=ast.Store()),
+                          )
                           ],
                     orelse=None,
                     type_comment=ast.Name(
                         id='int',
                         ctx=ast.Load()
                     )
-                )
+                )]
 
-                if col.nullable:
-                    output_col_ast = ast.If(
-                        test=col_var_valid,
-                        body=output_col_ast,
-                        orelse=[]
-                    )
-                    output_col_valid = ast.Assign(
-                        targets=[col_var_valid],
-                        value=col_len_var_valid
-                    )
                 output_col_null_term = ast.Assign(
                     targets=[
                         ast.Subscript(
@@ -606,8 +628,24 @@ class PythonASTTransform(BaseTransform):
                     ],
                     value=ast.Bytes(s='\0')
                 )
+
+                if col.type in settings.VAR_LENGTH_TYPES:
+                    output_col_ast.append(output_col_null_term)
+
+                if col.nullable:
+                    output_col_ast = [ast.If(
+                        test=col_var_valid,
+                        body=output_col_ast,
+                        orelse=[]
+                    )]
+
+                output_col_valid = ast.Assign(
+                    targets=[col_var_valid],
+                    value=col_len_var_valid
+                )
+
             else:
-                output_col_ast = ast.Expr(ast.BinOp(
+                output_col_ast = [ast.Expr(ast.BinOp(
                     left=
                     ast.Attribute(
                         value=ast.Name(
@@ -616,13 +654,33 @@ class PythonASTTransform(BaseTransform):
                         attr=col.name,
                         ctx=ast.Store()),
                     op=ast.RShift(),
-                    right=ast.Attribute(
-                        value=ast.Name(
-                            id=settings.OUTPUT_NAME + settings.TEST_SUFFIX,
-                            ctx=ast.Load()),
-                        attr=col.name,
+                    right=ast.Name(
+                        id=col_name_code,
                         ctx=ast.Load()),
-                    type_comment=None))
+                    type_comment=None)),
+                ast.Assign(
+                    targets=[col_var_value],
+                    value=ast.Attribute(
+                        value=ast.Name(
+                            id=col_name_code,
+                            ctx=ast.Load()),
+                        attr='data',
+                        ctx=ast.Load()),
+                )
+                ]
+
+                col_var_valid_src = ast.Attribute(
+                    value=ast.Name(
+                        id=col_name_code,
+                        ctx=ast.Load()
+                    ),
+                    attr='valid',
+                    ctx=ast.Load())
+
+                output_col_valid = ast.Assign(
+                    targets=[col_var_valid],
+                    value=col_var_valid_src
+                )
 
             output_col_ast_len = ast.Expr(ast.BinOp(
                 left=
@@ -639,6 +697,14 @@ class PythonASTTransform(BaseTransform):
                 ),
                 type_comment=None))
 
+            output_col_def = ast.AnnAssign(
+                target=ast.Name(
+                    id=col_name_code,
+                    ctx=ast.Store()),
+                annotation=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
+                value=None,
+                simple=1)
+
             output_col_def_len = ast.AnnAssign(
                 target=ast.Name(
                     id=col_name_code + settings.LENGTH_SUFFIX,
@@ -647,15 +713,20 @@ class PythonASTTransform(BaseTransform):
                 value=None,
                 simple=1)
 
+            schema_ast.append(output_col_def)
             if col.type in settings.VAR_LENGTH_TYPES:
                 schema_ast.append(output_col_def_len)
                 schema_ast.append(output_col_ast_len)
+
                 if col.nullable:
                     schema_ast.append(output_col_valid)
 
-            schema_ast.append(output_col_ast)
-            if col.type in settings.VAR_LENGTH_TYPES:
-                schema_ast.append(output_col_null_term)
+            schema_ast.extend(output_col_ast)
+
+            if col.type not in settings.VAR_LENGTH_TYPES:
+                if col.nullable:
+                    schema_ast.append(output_col_valid)
+
         return schema_ast
 
     def get_in_schema_ast(self, test_data=False) -> ast.Expr:
@@ -681,11 +752,22 @@ class PythonASTTransform(BaseTransform):
                     'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE, col.name,
                                                                    settings.INPORT_PREFIX,
                                                                    settings.INPUT_NAME)))
+            port_pragma_ast.append(
+                make_comment(
+                    'pragma HLS DATA_PACK variable={2}.{0}'.format(col.name,
+                                                                   settings.INPORT_PREFIX,
+                                                                   settings.INPUT_NAME)))
+            # pragma HLS DATA_PACK variable=st_in
             if col.type in settings.VAR_LENGTH_TYPES:
                 port_pragma_ast.append(
                     make_comment(
                         'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE,
                                                                        col.name + settings.LENGTH_SUFFIX,
+                                                                       settings.INPORT_PREFIX,
+                                                                       settings.INPUT_NAME)))
+                port_pragma_ast.append(
+                    make_comment(
+                        'pragma HLS DATA_PACK variable={2}.{0}'.format(col.name + settings.LENGTH_SUFFIX,
                                                                        settings.INPORT_PREFIX,
                                                                        settings.INPUT_NAME)))
 
@@ -695,11 +777,22 @@ class PythonASTTransform(BaseTransform):
                     'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE, col.name,
                                                                    settings.OUTPORT_PREFIX,
                                                                    settings.OUTPUT_NAME)))
+            port_pragma_ast.append(
+                make_comment(
+                    'pragma HLS DATA_PACK variable={2}.{0}'.format(col.name,
+                                                                   settings.OUTPORT_PREFIX,
+                                                                   settings.OUTPUT_NAME)))
+
             if col.type in settings.VAR_LENGTH_TYPES:
                 port_pragma_ast.append(
                     make_comment(
                         'pragma HLS INTERFACE {0} port={3}.{1}'.format(settings.PORT_TYPE,
                                                                        col.name + settings.LENGTH_SUFFIX,
+                                                                       settings.OUTPORT_PREFIX,
+                                                                       settings.OUTPUT_NAME)))
+                port_pragma_ast.append(
+                    make_comment(
+                        'pragma HLS DATA_PACK variable={2}.{0}'.format(col.name + settings.LENGTH_SUFFIX,
                                                                        settings.OUTPORT_PREFIX,
                                                                        settings.OUTPUT_NAME)))
 
@@ -774,15 +867,15 @@ class PythonASTTransform(BaseTransform):
 
     def visit_CompOp(self, node: ast_nodes.CompOp) -> ast.Compare:
         debug(node)
-        self.apply_value_reference(node.lhs)
-        self.apply_value_reference(node.rhs)
+        # self.apply_value_reference(node.lhs)
+        # self.apply_value_reference(node.rhs)
 
         return ast.Compare(self.visit(node.lhs), [self.visit(node.op)], [self.visit(node.rhs)])
 
     def visit_BinOp(self, node: ast_nodes.BinOp) -> Union[ast.BinOp, ast.BoolOp]:
         debug(node)
-        self.apply_value_reference(node.lhs)
-        self.apply_value_reference(node.rhs)
+        # self.apply_value_reference(node.lhs)
+        # self.apply_value_reference(node.rhs)
 
         if isinstance(node.op, ast_nodes.BoolOperator):
             return ast.BoolOp(self.visit(node.op), [self.visit(node.lhs), self.visit(node.rhs)])
@@ -791,13 +884,13 @@ class PythonASTTransform(BaseTransform):
 
     def visit_UnOp(self, node: ast_nodes.UnOp) -> ast.UnaryOp:
         debug(node)
-        self.apply_value_reference(node.rhs)
+        # self.apply_value_reference(node.rhs)
 
         return ast.UnaryOp(self.visit(node.op), self.visit(node.rhs))
 
     def visit_Not(self, node: ast_nodes.Not) -> ast.UnaryOp:
         debug(node)
-        self.apply_value_reference(node.expr)
+        # self.apply_value_reference(node.expr)
 
         return ast.UnaryOp(ast.Not(), self.visit(node.expr))
 
@@ -904,7 +997,7 @@ class PythonASTTransform(BaseTransform):
     def visit_FunctionCall(self, node: ast_nodes.FunctionCall) -> Union[ast.Call, PrePostAST]:
         func_metadata = self.func_resolver.resolve(node.func)
 
-        node.params = list(map(self.apply_value_reference, node.params))
+        #node.params = list(map(self.apply_value_reference, node.params))
 
         func_ast = ast.Call(
             func=ast.Name(
@@ -922,15 +1015,7 @@ class PythonASTTransform(BaseTransform):
         return func_ast
 
     def visit_ColumnReference(self, node: ast_nodes.ColumnReference) -> ast.Name:
-        if node.is_value_reference:
-            return ast.Attribute(
-                value=ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                ),
-                attr='value',
-                ctx=ast.Load())
-        elif node.is_valid_reference:
+        if node.is_valid_reference:
             return ast.Attribute(
                 value=ast.Name(
                     id=node.id,
@@ -938,21 +1023,22 @@ class PythonASTTransform(BaseTransform):
                 ),
                 attr='valid',
                 ctx=ast.Load())
+        elif not node.is_plain_reference:
+            return ast.Attribute(
+                value=ast.Name(
+                    id=node.id,
+                    ctx=ast.Load()
+                ),
+                attr='data',
+                ctx=ast.Load())
         else:
             return ast.Name(
                 id=node.id,
-                ctx=ast.Load())
+                ctx=ast.Load()
+            )
 
     def visit_IntermediaryReference(self, node: ast_nodes.IntermediaryReference) -> ast.Name:
-        if node.is_value_reference:
-            return ast.Attribute(
-                value=ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                ),
-                attr='value',
-                ctx=ast.Load())
-        elif node.is_valid_reference:
+        if node.is_valid_reference:
             return ast.Attribute(
                 value=ast.Name(
                     id=node.id,
@@ -960,13 +1046,22 @@ class PythonASTTransform(BaseTransform):
                 ),
                 attr='valid',
                 ctx=ast.Load())
+        elif not node.is_plain_reference:
+            return ast.Attribute(
+                value=ast.Name(
+                    id=node.id,
+                    ctx=ast.Load()
+                ),
+                attr='data',
+                ctx=ast.Load())
         else:
             return ast.Name(
-                id=node.id,
-                ctx=ast.Load())
+                    id=node.id,
+                    ctx=ast.Load()
+                )
 
     def visit_SelectColumn(self, node: ast_nodes.SelectColumn) -> list:
-        self.apply_value_reference(node.value)
+        # self.apply_value_reference(node.value)
         return self.visit(node.value)
 
     def visit_Select(self, node: ast_nodes.Select) -> list:
@@ -988,17 +1083,21 @@ class PythonASTTransform(BaseTransform):
             # TODO Proper error about missing output column
             col_name_code = col.name + settings.OUTPUT_SUFFIX
 
-            select_col_null = copy.deepcopy(select_col)
+            select_col_valid = copy.deepcopy(select_col)
             col_value = self.visit(select_col)
             if col.nullable:
-                col_value_null = self.visit(
+                col_value_valid = self.visit(
                     self.constant_propagation_transform.transform(
-                        self.strip_nullables_transform.transform(select_col_null),
+                        self.strip_nullables_transform.transform(select_col_valid),
                         skip_functions=True
                     )
                 )
 
             col_len_ast = ast.Name(id="VAR_LENGTH", ctx=ast.Load())
+
+            # Unwrap for lists.
+            if col.type in settings.VAR_LENGTH_TYPES and isinstance(col_value, ast.Attribute):
+                col_value = col_value.value
 
             if isinstance(col_value, PrePostAST):
                 col_value_ast = col_value.ast
@@ -1009,18 +1108,17 @@ class PythonASTTransform(BaseTransform):
                 if isinstance(col_value, ast.Name):
                     col_len_ast = self.visit(
                         ast_nodes.IntermediaryReference(
-                            id=col_value.id + settings.LENGTH_SUFFIX,
-                            is_value_reference=col.nullable
+                            id=col_value.id + settings.LENGTH_SUFFIX
                         )
                     )
 
             if col.nullable and col.type not in settings.VAR_LENGTH_TYPES:
-                args_ast = [col_value_ast, col_value_null]
+                args_ast = [col_value_valid, col_value_ast]
             else:
                 args_ast = [col_value_ast]
 
             if col.nullable:
-                args_len_ast = [col_len_ast, col_value_null]
+                args_len_ast = [col_value_valid, col_len_ast]
             else:
                 args_len_ast = [col_len_ast]
 
@@ -1046,7 +1144,7 @@ class PythonASTTransform(BaseTransform):
                 col_ast = ast.AnnAssign(
                     target=target_ast,
                     annotation=self.type_resolver.resolve(arrow_type=col.type, as_nullable=False,
-                                                          as_pointer=True),
+                                                               as_pointer=True),
                     value=None,
                     simple=1)
             else:
@@ -1123,12 +1221,12 @@ class PythonASTTransform(BaseTransform):
             body=self.get_port_pragma_ast() + self.get_input_ast() + [
                 make_comment("Start of data processing")] + self.visit(node.q) + [
                      make_comment("End of data processing")] + self.get_output_ast() + [
-                     ast.Expr(ast.Return(
+                     ast.Return(
                          value=ast.Name(
                              id=settings.PASS_VAR_NAME,
                              ctx=ast.Load()
                          )
-                     ))
+                     )
                  ],
             decorator_list=[],
             returns=ast.Name(
@@ -1191,12 +1289,12 @@ class PythonASTTransform(BaseTransform):
                 ),
                 make_comment("End of query code")
             ] + self.get_output_test_ast() + [
-                     ast.Expr(ast.Return(
+                     ast.Return(
                          value=ast.Name(
                              id=settings.PASS_VAR_NAME,
                              ctx=ast.Load()
                          )
-                     ))
+                     )
                  ],
             decorator_list=[],
             returns=ast.Name(

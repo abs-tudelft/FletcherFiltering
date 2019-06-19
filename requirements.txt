@@ -1,8 +1,8 @@
-https://github.com/EraYaN/moz-sql-parser/archive/object-ast.zip
+moz-sql-parser @ git+https://github.com/EraYaN/moz-sql-parser@object-ast
 typed-ast
 pyarrow
 numpy
 horast
 astunparse
 typed-astunparse
-https://github.com/EraYaN/transpyle/archive/sql-to-cpp.zip[c,cpp]
+transpyle[cpp] @ git+https://github.com/EraYaN/transpyle@cpp-unparsing-extensions

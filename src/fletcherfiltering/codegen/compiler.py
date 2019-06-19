@@ -32,7 +32,6 @@ source_header_header = """#pragma once
     #include <iso646.h>
 #endif
 #include "hls_stream.h"
-#include "hls_half.h"
 #include "fletcherfiltering.h" """
 
 source_code_header = """#include "{}.h" """
@@ -73,6 +72,7 @@ class Compiler(object):
     def __call__(self, query_str: str, output_dir: Path = Path('.'), query_name: str = 'query',
                  include_build_system: bool = True, include_test_system: bool = True,
                  extra_include_dirs: List[PurePath] = '',
+                 hls_include_dirs: List[PurePath] = '',
                  extra_link_dirs: List[PurePath] = '',
                  extra_link_libraries: List[str] = '', part_name: str = settings.PART_NAME):
         assert isinstance(query_str, str)
@@ -98,15 +98,16 @@ class Compiler(object):
 
         tb_delete = 'delete[] out.{0};'
 
-        tb_new = 'out.{0} = new char[{1}];'
+        tb_new = 'out.{0} = new {2}[{1}];'
 
-        out_str_columns = [x.name if not x.nullable else x.name+'.value' for x in self.out_schema if x.type == pa.string()]
+        out_str_columns = [x.name if not x.nullable else x.name+'.data' for x in self.out_schema if x.type == pa.string()]
 
         template_data = {
             'VAR_LENGTH': settings.VAR_LENGTH,
             'query_name': query_name,
             'generated_files': " ".join(generated_files),
             'extra_include_dirs': ' '.join([d.as_posix() for d in extra_include_dirs]),
+            'hls_include_dirs': ' '.join(['-I'+d.as_posix() for d in hls_include_dirs]),
             'extra_link_dirs': ' '.join([d.as_posix() for d in extra_link_dirs]),
             'extra_link_libraries': ' '.join(extra_link_libraries),
             'test_suffix': settings.TEST_SUFFIX,
@@ -114,7 +115,7 @@ class Compiler(object):
             'testbench_suffix': settings.TESTBENCH_SUFFIX,
             'part_name': part_name,
             'out_columns_tb_delete': "\n    ".join([tb_delete.format(x) for x in out_str_columns]),
-            'out_columns_tb_new': "\n    ".join([tb_new.format(x, settings.VAR_LENGTH + 1) for x in out_str_columns]),
+            'out_columns_tb_new': "\n    ".join([tb_new.format(x, settings.VAR_LENGTH + 1, settings.STRING_BASE_TYPE_TEST) for x in out_str_columns]),
         }
 
         build_system_files = [
@@ -130,10 +131,13 @@ class Compiler(object):
             TemplateData(self.template_path / Path('template.run_complete_hls.tcl'),
                          output_dir / Path('run_complete_hls.tcl')),
             TemplateData(self.template_path / Path('template.testbench.cpp'),
-                         output_dir / Path('{0}{1}.cpp'.format(query_name, settings.TESTBENCH_SUFFIX))),
-            TemplateData(self.template_path / Path('template.data.h'),
-                         output_dir / Path('{0}{1}.h'.format(query_name, settings.DATA_SUFFIX))),
+                         output_dir / Path('{0}{1}.cpp'.format(query_name, settings.TESTBENCH_SUFFIX)))
         ]
+
+        if settings.OVERWRITE_DATA:
+            test_system_files.append(TemplateData(self.template_path / Path('template.data.h'),
+                         output_dir / Path('{0}{1}.h'.format(query_name, settings.DATA_SUFFIX))))
+
 
         if include_build_system:
             for file in build_system_files:
@@ -168,7 +172,7 @@ class Compiler(object):
                      str(output_dir / file))
 
     def parse(self, query_str: str):
-        return msp.parse(query_str)
+        return msp.parse(query_str, json=False)
 
     def transform(self, query: ast_nodes.Query, query_name: str):
         assert isinstance(query, ast_nodes.Query)
@@ -222,9 +226,8 @@ class Compiler(object):
 
     def output(self, header_ast: ast.AST, general_ast: ast.AST, header_test_ast: ast.AST, general_test_ast: ast.AST,
                output_dir: PurePath, query_name: str, include_test_system: bool = True):
-        to_language = transpyle.Language.find('C++')
-        unparser = transpyle.Unparser.find(to_language)(headers=False)
-        unparser_header = transpyle.Unparser.find(to_language)(headers=True)
+        unparser = transpyle.Cpp14Unparser(headers=False)
+        unparser_header = transpyle.Cpp14Unparser(headers=True)
 
         cpp_code = unparser.unparse(general_ast)
         cpp_header = unparser_header.unparse(header_ast)

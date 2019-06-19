@@ -4,7 +4,7 @@ from pathlib import Path
 DEFAULT_DATA_SIZE = 1000
 WORKSPACE_NAME = 'fletcherfiltering_test_workspace'
 BUILD_CONFIG = 'Release'
-CLEAN_WORKDIR = True
+CLEAN_WORKDIR = False
 SWALLOW_OUTPUT = False
 
 REL_TOL_FLOAT16 = 1e-2 # digits for half float: 3.31
@@ -31,7 +31,7 @@ if platform.system() == "Windows":
     HLS_LINK_PATH = [VIVADO_DIR / Path('win64/tools/fpo_v7_0')]
     HLS_LIBS = ['libgmp', 'libmpfr', 'libIp_floating_point_v7_0_bitacc_cmodel']
 elif platform.system() == "Darwin":
-    TEST_PARTS = []
+    TEST_PARTS = ['sql']
     CMAKE_GENERATOR = 'Ninja'
     VIVADO_DIR = Path('/Users/erwin/Xilinx/Vivado/2018.3')
     VIVADO_BIN_DIR = VIVADO_DIR / 'bin'

@@ -5,3 +5,4 @@ pytest-print
 pytest-progress
 mysql-connector-python
 lipsum
+bitstring

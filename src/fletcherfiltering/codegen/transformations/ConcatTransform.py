@@ -52,7 +52,8 @@ class ConcatTransform(BaseTransform):
             raise UnsupportedArgumentTypeError()
 
         if col.type in settings.VAR_LENGTH_TYPES:
-            return [node, ast_nodes.IntermediaryReference(id=col.name + settings.LENGTH_SUFFIX, is_value_reference=node.is_value_reference)]
+            node.is_plain_reference = True
+            return [node, ast_nodes.IntermediaryReference(id=col.name + settings.LENGTH_SUFFIX)]
 
     def param_TrueValue(self, node: ast_nodes.TrueValue) -> list:
         debug(node)

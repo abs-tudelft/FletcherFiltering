@@ -3,7 +3,7 @@ import pyarrow as pa
 import typed_ast.ast3 as ast
 
 
-class ArrowTypeResolver(object):
+class ArrowTestTypeResolver(object):
 
     @staticmethod
     def make_method_name(arrow_type: pa.DataType) -> str:
@@ -37,69 +37,69 @@ class ArrowTypeResolver(object):
         if as_nullable:
             type_ast = ast.Subscript(
                 value=ast.Name(
-                    id='nullable',
+                    id='nullable_tb',
                     ctx=ast.Load()),
                 slice=type_ast
             )
 
         return type_ast
-
+    
     def type_bool(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_bool", as_nullable, as_pointer, as_const)
+        return self.full_type_name("bool", as_nullable, as_pointer, as_const)
 
     def type_int8(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_int8", as_nullable, as_pointer, as_const)
+        return self.full_type_name("int8_t", as_nullable, as_pointer, as_const)
 
     def type_uint8(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint8", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint8_t", as_nullable, as_pointer, as_const)
 
     def type_int16(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_int16", as_nullable, as_pointer, as_const)
+        return self.full_type_name("int16_t", as_nullable, as_pointer, as_const)
 
     def type_uint16(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint16", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint16_t", as_nullable, as_pointer, as_const)
 
     def type_int32(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_int32", as_nullable, as_pointer, as_const)
+        return self.full_type_name("int32_t", as_nullable, as_pointer, as_const)
 
     def type_uint32(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint32", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint32_t", as_nullable, as_pointer, as_const)
 
     def type_int64(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_int64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("int64_t", as_nullable, as_pointer, as_const)
 
     def type_uint64(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint64_t", as_nullable, as_pointer, as_const)
 
     def type_date32(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_date32", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint32_t", as_nullable, as_pointer, as_const)
 
     def type_date64(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_date64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint64_t", as_nullable, as_pointer, as_const)
 
     def type_timestamp_s_(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint64_t", as_nullable, as_pointer, as_const)
 
     def type_timestamp_ms_(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint64_t", as_nullable, as_pointer, as_const)
 
     def type_timestamp_us_(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint64_t", as_nullable, as_pointer, as_const)
 
     def type_timestamp_ns_(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("uint64_t", as_nullable, as_pointer, as_const)
 
     def type_string(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_uint8", as_nullable, as_pointer, as_const)
+        return self.full_type_name("char", as_nullable, as_pointer, as_const)
 
     def type_halffloat(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_float16", as_nullable, as_pointer, as_const)
+        return self.full_type_name("half", as_nullable, as_pointer, as_const)
 
     def type_float(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_float32", as_nullable, as_pointer, as_const)
+        return self.full_type_name("float", as_nullable, as_pointer, as_const)
 
     def type_double(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
-        return self.full_type_name("f_float64", as_nullable, as_pointer, as_const)
+        return self.full_type_name("double", as_nullable, as_pointer, as_const)
 
     def unknown_type(self, arrow_type, as_nullable: bool = False, as_pointer: bool = False, as_const: bool = False):
         raise NotImplementedError('{}{}{} cannot be processed'.format(arrow_type, ' as pointer' if as_pointer else '',

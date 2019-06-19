@@ -43,18 +43,14 @@ setup(
         'Topic :: Utilities'
     ],
     install_requires=[
-        'moz-sql-parser',
+        'moz-sql-parser @ git+https://github.com/EraYaN/moz-sql-parser@object-ast',
         'typed-ast',
         'pyarrow',
         'numpy',
         'horast',
         'astunparse',
         'typed-astunparse',
-        'transpyle[c,cpp]',
-    ],
-    dependency_links=[
-        'https://github.com/EraYaN/moz-sql-parser/archive/sql-to-cpp'
-        'https://github.com/EraYaN/transpyle/archive/sql-to-cpp'
+        'transpyle[cpp] @ git+https://github.com/EraYaN/transpyle@cpp-unparsing-extensions',
     ],
     setup_requires=[
         "pytest-runner"
@@ -65,7 +61,8 @@ setup(
         "pytest-print",
         "pytest-progress",
         "mysql-connector-python",
-        "lipsum"
+        "lipsum",
+        "bitstring"
     ],
     packages=find_packages('./src')
 )

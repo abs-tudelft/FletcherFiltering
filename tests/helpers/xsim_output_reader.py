@@ -5,6 +5,8 @@ from .struct_type_mapper import StructTypeMapper
 import re
 import struct
 from fletcherfiltering import settings
+import bitstring
+import math
 
 
 class XSIMOutputReader():
@@ -12,16 +14,14 @@ class XSIMOutputReader():
         self.in_schema = in_schema
         self.out_schema = out_schema
 
-    def collapse_valid_column(self, d:dict, col_name: str, grab_from_length_column:bool = False):
-        source_name = col_name + (settings.LENGTH_SUFFIX if grab_from_length_column else '') + settings.VALID_SUFFIX
+    def collapse_length_valid_column(self, d: dict, col_name: str):
+        source_name = col_name + settings.LENGTH_SUFFIX
         assert source_name in d
 
-        if d[source_name] == False:
+        if d[source_name] is None:
             d[col_name] = None
 
-        del d[source_name]
         return d
-
 
     def read(self, data_path: PurePath, query_name: str):
         # print("Reading....")
@@ -52,54 +52,41 @@ class XSIMOutputReader():
             for column in columns:
                 col_name = 'ap_return'
                 length_column = False
-                valid_column = False
-                nullable_column = True
                 col_type = pa.bool_()
                 if column[0] is not col_name:
                     if not column[0].startswith(settings.INPUT_NAME):
-                        colname_regex = re.compile(r"{0}_([a-zA-Z0-9_]+?)(_len)?_V_?([a-zA-Z]+)?".format(settings.OUTPUT_NAME))
+                        colname_regex = re.compile(r"{0}_([a-zA-Z0-9_]+?)(_len)?_V?".format(settings.OUTPUT_NAME))
                         matches = colname_regex.match(column[0])
                         if matches:
                             col_name = matches.group(1)
-                            col_name_suffix = matches.group(3)
-                            if col_name_suffix == 'value':
-                                assert self.out_schema.field_by_name(col_name).nullable
-                                nullable_column = True
-                            if col_name_suffix == 'valid' and matches.group(2) == settings.LENGTH_SUFFIX:
-                                col_type = settings.VALID_TYPE
-                                valid_column = True
-                                length_column = True
-                            elif col_name_suffix == 'valid':
-                                col_type = settings.VALID_TYPE
-                                valid_column = True
-                            elif matches.group(2) == settings.LENGTH_SUFFIX:
+                            col = self.out_schema.field_by_name(col_name)
+                            if matches.group(2) == settings.LENGTH_SUFFIX:
                                 col_type = settings.LENGTH_TYPE
                                 length_column = True
                             else:
-                                col_type = self.out_schema.field_by_name(col_name).type
+                                col_type = col.type
                     # else:
                     # print("Input column {}, skipping.".format(column))
 
                 suffix = ''
                 if length_column:
                     suffix += settings.LENGTH_SUFFIX
-                if valid_column:
-                    suffix += settings.VALID_SUFFIX
 
                 #c_data_out_file = data_path / Path(cdata_out_filename_template.format(query_name, column[0]))
                 rtl_data_out_file = data_path / Path(rtldata_out_filename_template.format(query_name, column[0]))
                 if rtl_data_out_file.is_file():
                     with open(rtl_data_out_file, 'r') as rtl_datafile:
-                        data = self.read_datafile(rtl_datafile, total_transactions, struct_type_mapper.resolve(col_type))
+                        data = self.read_datafile(rtl_datafile, total_transactions, struct_type_mapper.resolve(col_type), col.nullable and col_name!='ap_return', col_name=='ap_return')
                         out_data = self.merge_column(out_data, data, col_name + suffix)
+
+            for col in self.out_schema:
+                if col.nullable and col.type in settings.VAR_LENGTH_TYPES:
+                    out_data = list(
+                        map(lambda d: self.collapse_length_valid_column(d, col.name), out_data))
 
             # Remove LENGTH columns from output and also filter on the query return value.
             out_data = [{k: v for (k, v) in d.items() if k != 'ap_return' and not k.endswith(settings.LENGTH_SUFFIX)}
                         for d in out_data if d['ap_return']]
-
-            for col in self.out_schema:
-                if col.nullable:
-                    out_data = list(map(lambda d: self.collapse_valid_column(d, col.name, col.type in settings.VAR_LENGTH_TYPES), out_data))
 
 
         return out_data
@@ -113,7 +100,43 @@ class XSIMOutputReader():
             data[extra_data_idx][column_name] = extra_data_row
         return data
 
-    def read_datafile(self, filestream: typing.TextIO, num_transactions: int, type: typing.Tuple[str, int]):
+    def handle_data_hex(self, hex: str, type: typing.Tuple[str, int], nullable: bool = False, simple: bool = False):
+        base_bits = 2
+        extra_bits = base_bits if not nullable else base_bits+1
+        if simple:
+            base_bits = 0
+            extra_bits = 0
+        total_bits = type[1] + extra_bits
+        total_bytes = math.ceil(total_bits/4)
+        hex_value = hex.zfill(total_bytes)
+        bs = bitstring.BitArray(hex=hex_value)[-total_bits:]
+        fmt = '{2}bits:{0}{1}'.format(type[1], ',bool' * base_bits, 'bool,' if nullable else '')
+        data = bs.unpack(fmt)
+
+        if simple:
+            dvalid = True
+            last = False
+            valid = True
+            data = data[0].tobytes()
+        elif nullable:
+            dvalid = data[3]
+            last = data[2]
+            valid = data[0]
+            data = data[1].tobytes()
+        else:
+            dvalid = data[2]
+            last = data[1]
+            valid = True
+            data = data[0].tobytes()
+        if type[0] != '_str_':
+            unpacked = struct.unpack('>' + type[0], data)
+            if isinstance(unpacked, tuple):
+                unpacked = unpacked[0]
+        else:
+            unpacked = data
+        return {'data': unpacked, 'dvalid': dvalid, 'last': last, 'valid': valid}
+
+    def read_datafile(self, filestream: typing.TextIO, num_transactions: int, type: typing.Tuple[str, int], nullable: bool = False, simple: bool = False):
         trans_num_regex = re.compile(r"\[\[transaction\]\]\s+([0-9]+)")
         in_runtime = False
         in_transaction = False
@@ -143,24 +166,20 @@ class XSIMOutputReader():
                 current_transaction = None
             elif in_runtime and in_transaction:
                 # Data
-
                 hex_value = line.strip()[2:]
-                hex_value = hex_value.zfill(type[1] * 2)
-                if len(hex_value) > type[1] * 2:
-                    hex_value = hex_value[-type[1] * 2:]
-                # TODO unpack into types.
-                raw_value = bytes.fromhex(hex_value)
-                if type[0] == '_str_':
-                    transactions[current_transaction] += bytes(raw_value)
-                else:
-                    unpacked = struct.unpack('>' + type[0], raw_value)
-                    if isinstance(unpacked, tuple):
-                        transactions[current_transaction] = unpacked[0]
+                unpacked = self.handle_data_hex(hex_value, type, nullable and type[0] != '_str_', simple)
+
+                if unpacked['valid']:
+                    if type[0] == '_str_':
+                        transactions[current_transaction] += unpacked['data']
                     else:
-                        transactions[current_transaction] = unpacked
+                        transactions[current_transaction] = unpacked['data']
+                else:
+                    transactions[current_transaction] = None
+
             else:
                 raise ValueError("Read line '{}' data that is not supported in this spot.".format(line))
         if type[0] == '_str_':
             # Decode from UTF-8 bytes
-            transactions = {k: v.decode('utf-8') for k, v in transactions.items()}
+            transactions = {k: v.decode('utf-8') if v is not None else None for k, v in transactions.items()}
         return transactions

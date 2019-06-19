@@ -59,7 +59,7 @@ class FunctionResolver(object):
                 ctx=ast.Store()
             ),
             annotation=ast.Name(
-                id='char',
+                id=settings.STRING_BASE_TYPE,
                 ctx=ast.Load()),
             value=None,
             simple=1),

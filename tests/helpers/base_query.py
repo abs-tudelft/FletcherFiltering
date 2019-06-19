@@ -69,17 +69,17 @@ class BaseQuery:
                 if not self.create_table():
                     pytest.fail("Could not create table successfully on second try.")
 
-        if 'fletcherfiltering' in test_settings.TEST_PARTS or 'vivado' in test_settings.TEST_PARTS:
-            if not self.working_dir.exists():
-                self.printer("Creating workspace directory '{}'".format(self.working_dir))
+        #if 'fletcherfiltering' in test_settings.TEST_PARTS or 'vivado' in test_settings.TEST_PARTS:
+        if not self.working_dir.exists():
+            self.printer("Creating workspace directory '{}'".format(self.working_dir))
+            self.working_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            if self.clean_workdir:
+                self.printer("Re-creating workspace directory '{}'".format(self.working_dir))
+                shutil.rmtree(self.working_dir)
                 self.working_dir.mkdir(parents=True, exist_ok=True)
             else:
-                if self.clean_workdir:
-                    self.printer("Re-creating workspace directory '{}'".format(self.working_dir))
-                    shutil.rmtree(self.working_dir)
-                    self.working_dir.mkdir(parents=True, exist_ok=True)
-                else:
-                    self.printer("Using workspace directory '{}'".format(self.working_dir))
+                self.printer("Using workspace directory '{}'".format(self.working_dir))
 
         if not self.has_data_file:
             self.generate_random_data()
@@ -175,7 +175,7 @@ class BaseQuery:
         compiler = Compiler(self.in_schema, self.out_schema)
 
         compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
-                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH, extra_link_dirs=test_settings.HLS_LINK_PATH,
+                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH, hls_include_dirs=[settings.FLETCHER_DIR / settings.FLETCHER_HLS_DIR], extra_link_dirs=test_settings.HLS_LINK_PATH,
                  extra_link_libraries=test_settings.HLS_LIBS)
 
     def build_schema_class(self, schema: pa.Schema, suffix: str):
@@ -292,15 +292,15 @@ class BaseQuery:
                     data_item_text = "{}".format(data_item[col.name])
                 if col.nullable:
                     if data_item[col.name] is not None:
-                        data_item_lst.append("{{{0}, true}}".format(data_item_text))
+                        data_item_lst.append("{{ .data = {0}, .valid = true}}".format(data_item_text))
                     else:
                         if col.type == pa.string():
                             default_value = "\"\""
                         else:
                             default_value = "0"
-                        data_item_lst.append("{{{0}, false}}".format(default_value))
+                        data_item_lst.append("{{ .data = {0}, .valid = false}}".format(default_value))
                 else:
-                    data_item_lst.append(data_item_text)
+                    data_item_lst.append("{0}".format(data_item_text))
 
             data_placeholder.append(", ".join(data_item_lst))
 
