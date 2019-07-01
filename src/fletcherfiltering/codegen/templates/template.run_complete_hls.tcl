@@ -18,5 +18,5 @@ config_export -format ip_catalog -rtl vhdl
 csim_design -O
 csynth_design
 cosim_design -O -trace_level all -rtl vhdl
-#export_design -rtl vhdl -format ip_catalog
+export_design -rtl vhdl -format ip_catalog
 exit

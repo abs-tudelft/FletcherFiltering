@@ -6,7 +6,7 @@ from .BaseTransform import BaseTransform
 from .. import debug, settings
 from ..exceptions import *
 from .helpers import grouped
-
+import copy
 
 class ConstantPropagationTransform(BaseTransform):
 
@@ -18,7 +18,12 @@ class ConstantPropagationTransform(BaseTransform):
 
     def transform(self, node, skip_functions=False):
         self.skip_functions = skip_functions
-        return self.visit(node)
+        old_node = copy.deepcopy(node)
+        node = self.visit(node)
+        while old_node != node:
+            old_node = copy.deepcopy(node)
+            node = self.visit(node)
+        return node
 
     @staticmethod
     def make_funcprop_name(funcname: str) -> str:
@@ -56,19 +61,27 @@ class ConstantPropagationTransform(BaseTransform):
     def visit_BinOp(self, node: ast_nodes.BinOp) -> Union[ast_nodes.BinOp, ast_nodes.IntValue, ast_nodes.DoubleValue, ast_nodes.Reference]:
         node = self.generic_visit(node)
         debug(node)
-        if isinstance(node.rhs,ast_nodes.Value) and isinstance(node.lhs,ast_nodes.Value):
+        if node.rhs is None and node.lhs is None:
+            return None
+        elif node.rhs is not None and node.lhs is None:
+            return node.rhs
+        elif node.rhs is None and node.lhs is not None:
+            return node.lhs
+        elif isinstance(node.rhs,ast_nodes.Value) and isinstance(node.lhs,ast_nodes.Value):
             method_name = self.make_binop_name(node.op.__class__.__name__)
             # Get the method from 'self'. Default to a lambda.
             method = getattr(self, method_name, lambda x: x)
             # Call the method as we return it
             return method(node)
         elif isinstance(node.rhs,ast_nodes.Reference) and isinstance(node.lhs,ast_nodes.Reference):
-            if isinstance(node.op, ast_nodes.BoolOperator):
+            if isinstance(node.op, ast_nodes.BoolOperator) and node.rhs.id == node.lhs.id and node.rhs.metadata == node.lhs.metadata:
                 return node.lhs
             else:
                 return node
         elif (isinstance(node.rhs,ast_nodes.Reference) and isinstance(node.lhs,ast_nodes.BoolValue)) or \
-                (isinstance(node.rhs,ast_nodes.BoolValue) and isinstance(node.lhs,ast_nodes.Reference)):
+                (isinstance(node.rhs,ast_nodes.BoolValue) and isinstance(node.lhs,ast_nodes.Reference)) or \
+                (isinstance(node.rhs,ast_nodes.BinOp) and isinstance(node.lhs,ast_nodes.BoolValue)) or \
+                (isinstance(node.rhs,ast_nodes.BoolValue) and isinstance(node.lhs,ast_nodes.BinOp)):
             if isinstance(node.op, ast_nodes.BoolOperator):
                 method_name = self.make_binop_name(node.op.__class__.__name__)
                 # Get the method from 'self'. Default to a lambda.

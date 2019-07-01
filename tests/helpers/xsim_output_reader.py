@@ -14,16 +14,18 @@ class XSIMOutputReader():
         self.in_schema = in_schema
         self.out_schema = out_schema
 
-    def collapse_length_valid_column(self, d: dict, col_name: str):
+    def collapse_length_valid_column(self, d: dict, col_name: str, full_output: bool = False):
         source_name = col_name + settings.LENGTH_SUFFIX
         assert source_name in d
 
-        if d[source_name] is None:
+        if full_output:
+            d[col_name] = {'len_data': d[source_name], 'data': d[col_name]}
+        elif d[source_name] is None:
             d[col_name] = None
 
         return d
 
-    def read(self, data_path: PurePath, query_name: str):
+    def read(self, data_path: PurePath, query_name: str, full_output: bool = False):
         # print("Reading....")
 
         ref_filename = Path('cdatafile/ref.tcl')
@@ -76,17 +78,27 @@ class XSIMOutputReader():
                 rtl_data_out_file = data_path / Path(rtldata_out_filename_template.format(query_name, column[0]))
                 if rtl_data_out_file.is_file():
                     with open(rtl_data_out_file, 'r') as rtl_datafile:
-                        data = self.read_datafile(rtl_datafile, total_transactions, struct_type_mapper.resolve(col_type), col.nullable and col_name!='ap_return', col_name=='ap_return')
+                        data = self.read_datafile(rtl_datafile, num_transactions=total_transactions,
+                                                  type=struct_type_mapper.resolve(col_type),
+                                                  nullable=col.nullable and col_name!='ap_return',
+                                                  simple=col_name=='ap_return',
+                                                  full_output=full_output)
                         out_data = self.merge_column(out_data, data, col_name + suffix)
 
-            for col in self.out_schema:
-                if col.nullable and col.type in settings.VAR_LENGTH_TYPES:
-                    out_data = list(
-                        map(lambda d: self.collapse_length_valid_column(d, col.name), out_data))
+            if not full_output:
+                for col in self.out_schema:
+                    if col.nullable and col.type in settings.VAR_LENGTH_TYPES:
+                        out_data = list(
+                            map(lambda d: self.collapse_length_valid_column(d, col.name, full_output), out_data))
 
-            # Remove LENGTH columns from output and also filter on the query return value.
-            out_data = [{k: v for (k, v) in d.items() if k != 'ap_return' and not k.endswith(settings.LENGTH_SUFFIX)}
-                        for d in out_data if d['ap_return']]
+                # Remove LENGTH columns from output and also filter on the query return value.
+                out_data = [{k: v for (k, v) in d.items() if k != 'ap_return' and not k.endswith(settings.LENGTH_SUFFIX)}
+                            for d in out_data if d['ap_return']]
+            else:
+                out_data = [
+                    #{k: v for (k, v) in d.items() if k != 'ap_return'}
+                    d
+                    for d in out_data if d['ap_return']]
 
 
         return out_data
@@ -136,7 +148,7 @@ class XSIMOutputReader():
             unpacked = data
         return {'data': unpacked, 'dvalid': dvalid, 'last': last, 'valid': valid}
 
-    def read_datafile(self, filestream: typing.TextIO, num_transactions: int, type: typing.Tuple[str, int], nullable: bool = False, simple: bool = False):
+    def read_datafile(self, filestream: typing.TextIO, num_transactions: int, type: typing.Tuple[str, int], nullable: bool = False, simple: bool = False, full_output: bool = False):
         trans_num_regex = re.compile(r"\[\[transaction\]\]\s+([0-9]+)")
         in_runtime = False
         in_transaction = False
@@ -153,11 +165,14 @@ class XSIMOutputReader():
                     if current_transaction > num_transactions:
                         raise ValueError("Read a transaction ID larger that the total number of transactions.")
 
-                    if not current_transaction in transactions:
+                    if current_transaction not in transactions:
                         if type[0] == '_str_':
-                            transactions[current_transaction] = b""
+                            transactions[current_transaction] = b"" if not full_output else []
                         else:
-                            transactions[current_transaction] = None
+                            transactions[current_transaction] = None if not full_output else {'data': None,
+                                                                                              'dvalid': None,
+                                                                                              'last': None,
+                                                                                              'valid': None}
 
             elif in_runtime and not in_transaction and '[[[/runtime]]]' in line:
                 in_runtime = False
@@ -171,15 +186,18 @@ class XSIMOutputReader():
 
                 if unpacked['valid']:
                     if type[0] == '_str_':
-                        transactions[current_transaction] += unpacked['data']
+                        if full_output:
+                            transactions[current_transaction].append(unpacked)
+                        else:
+                            transactions[current_transaction] += unpacked['data']
                     else:
-                        transactions[current_transaction] = unpacked['data']
+                        transactions[current_transaction] = unpacked['data'] if not full_output else unpacked
                 else:
-                    transactions[current_transaction] = None
+                    transactions[current_transaction] = None if not full_output else unpacked
 
             else:
                 raise ValueError("Read line '{}' data that is not supported in this spot.".format(line))
-        if type[0] == '_str_':
+        if type[0] == '_str_' and not full_output:
             # Decode from UTF-8 bytes
             transactions = {k: v.decode('utf-8') if v is not None else None for k, v in transactions.items()}
         return transactions

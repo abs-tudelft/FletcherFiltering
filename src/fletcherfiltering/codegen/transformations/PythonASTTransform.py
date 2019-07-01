@@ -6,12 +6,12 @@ from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
 from .. import debug, settings
-from .helpers import make_comment
+from .helpers import make_comment, ReferenceMetadata
 from .helpers.ArrowTestTypeResolver import ArrowTestTypeResolver
 from .helpers.ArrowTypeResolver import ArrowTypeResolver
-from .helpers.FunctionResolver import FunctionResolver, PrePostAST
+from .helpers.FunctionResolver import FunctionResolver, PrePostAST, FunctionMetadata
 from ..exceptions import *
-from .StripNullablesTransform import StripNullablesTransform
+from .AuxSignalTransform import AuxSignalTransform
 from .ConstantPropagationTransform import ConstantPropagationTransform
 
 
@@ -23,7 +23,7 @@ class PythonASTTransform(BaseTransform):
         self.type_resolver = ArrowTypeResolver()
         self.test_type_resolver = ArrowTestTypeResolver()
         self.func_resolver = FunctionResolver()
-        self.strip_nullables_transform = StripNullablesTransform(self.in_schema, self.out_schema)
+        self.aux_signal_transform = AuxSignalTransform(self.in_schema, self.out_schema)
         self.constant_propagation_transform = ConstantPropagationTransform(self.in_schema, self.out_schema)
         self.query_name = 'query'
 
@@ -284,77 +284,146 @@ class PythonASTTransform(BaseTransform):
                         attr='data',
                         ctx=ast.Load())
 
-                col_load = ast.For(
-                    target=ast.Name(id='i', ctx=ast.Store()),
-                    iter=ast.Call(
-                        func=ast.Name(
-                            id='range',
-                            ctx=ast.Load()
+                col_load = [
+                    ast.For(
+                        target=ast.Name(id='i', ctx=ast.Store()),
+                        iter=ast.Call(
+                            func=ast.Name(
+                                id='range',
+                                ctx=ast.Load()
+                            ),
+                            args=[
+                                ast.Num(0),
+                                col_len_var
+                            ],
+                            keywords=[]
                         ),
-                        args=[
-                            ast.Num(0),
-                            col_len_var
-                        ],
-                        keywords=[]
-                    ),
-                    body=[make_comment("pragma HLS PIPELINE"),
-                          ast.Expr(ast.BinOp(
-                              left=ast.Attribute(
-                                  value=ast.Name(
-                                      id=settings.INPUT_NAME,
+                        body=[make_comment("pragma HLS PIPELINE"),
+                              ast.Expr(ast.BinOp(
+                                  left=ast.Attribute(
+                                      value=ast.Name(
+                                          id=settings.INPUT_NAME,
+                                          ctx=ast.Load()),
+                                      attr=col.name,
                                       ctx=ast.Load()),
-                                  attr=col.name,
-                                  ctx=ast.Load()),
-                              op=ast.LShift(),
-                              right=ast.Call(
-                                  func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable and col.type not in settings.VAR_LENGTH_TYPES),
-                                  args=[
-                                      ast.Subscript(
-                                          value=col_var_value,
-                                          slice=ast.Index(ast.Name(
-                                              id='i',
-                                              ctx=ast.Load()
-                                          )),
-                                          ctx=ast.Store()
-                                      )],
-                                  keywords=[]
-                              ),
-                              type_comment=None)
-                          )],
-                    orelse=None,
-                    type_comment=ast.Name(
-                        id='int',
-                        ctx=ast.Load()
+                                  op=ast.LShift(),
+                                  right=ast.Call(
+                                      func=self.type_resolver.resolve(arrow_type=col.type,
+                                                                      as_nullable=col.nullable and col.type not in settings.VAR_LENGTH_TYPES),
+                                      args=[
+                                          ast.Subscript(
+                                              value=col_var_value,
+                                              slice=ast.Index(ast.Name(
+                                                  id='i',
+                                                  ctx=ast.Load()
+                                              )),
+                                              ctx=ast.Store()
+                                          ),
+                                          ast.NameConstant('True'),  # dvalid
+                                          ast.Compare(
+                                              left=ast.Name(
+                                                  id='i',
+                                                  ctx=ast.Load()
+                                              ),
+                                              ops=[ast.Eq()],
+                                              comparators=[
+                                                  ast.BinOp(
+                                                      left=col_len_var,
+                                                      op=ast.Sub(),
+                                                      right=ast.Num(1)
+                                                  )
+                                              ]
+                                          )  # last
+                                      ],
+                                      keywords=[]
+                                  ),
+                                  type_comment=None)
+                              )],
+                        orelse=None,
+                        type_comment=ast.Name(
+                            id='int',
+                            ctx=ast.Load()
+                        )
+                    ),
+                    ast.If(
+                        test=ast.Compare(
+                            left=col_len_var,
+                            ops=[ast.Eq()],
+                            comparators=[
+                                ast.Num(0)
+                            ]
+                        ),
+                        body=[
+                            ast.Expr(ast.BinOp(
+                                left=ast.Attribute(
+                                    value=ast.Name(
+                                        id=settings.INPUT_NAME,
+                                        ctx=ast.Load()),
+                                    attr=col.name,
+                                    ctx=ast.Load()),
+                                op=ast.LShift(),
+                                right=ast.Call(
+                                    func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
+                                    args=[
+                                        ast.Num(0),
+                                        ast.NameConstant('False'),  # dvalid
+                                        ast.NameConstant('True'),  # last
+                                    ],
+                                    keywords=[]
+                                ),
+                                type_comment=None))
+                        ],
+                        orelse=[]
                     )
-                )
+                ]
                 if col.nullable:
-                    col_load = ast.If(
+                    col_load[1].body[0].value.right.args.insert(0, ast.NameConstant('False'))
+                    col_load = [ast.If(
                         test=col_var_valid,
                         body=col_load,
                         orelse=[]
-                    )
+                    )]
             else:
-                col_load = ast.Expr(ast.BinOp(
-                    left=ast.Attribute(
-                        value=ast.Name(
-                            id=settings.INPUT_NAME,
+                col_load = [
+                    ast.Expr(ast.BinOp(
+                        left=ast.Attribute(
+                            value=ast.Name(
+                                id=settings.INPUT_NAME,
+                                ctx=ast.Load()),
+                            attr=col.name,
                             ctx=ast.Load()),
-                        attr=col.name,
-                        ctx=ast.Load()),
-                    op=ast.LShift(),
-                    right=ast.Call(
-                        func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
-                        args=[
-                            ast.Attribute(
-                                value=ast.Name(
-                                    id=settings.INPUT_NAME + settings.TEST_SUFFIX,
+                        op=ast.LShift(),
+                        right=ast.Call(
+                            func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
+                            args=[
+                                ast.Attribute(
+                                    value=ast.Name(
+                                        id=settings.INPUT_NAME + settings.TEST_SUFFIX,
+                                        ctx=ast.Load()),
+                                    attr=col.name,
                                     ctx=ast.Load()),
-                                attr=col.name,
-                                ctx=ast.Load())
-                        ],
-                        keywords=[]
-                    ),
-                    type_comment=None))
+                                ast.NameConstant('True'),  # dvalid
+                                ast.Compare(
+                                    left=ast.Name(
+                                        id=settings.CURRENT_RECORD_VAR_NAME,
+                                        ctx=ast.Load()
+                                    ),
+                                    ops=[ast.Eq()],
+                                    comparators=[
+                                        ast.Attribute(
+                                            value=ast.Name(
+                                                id=settings.META_NAME,
+                                                ctx=ast.Load()
+                                            ),
+                                            attr='length',
+                                            ctx=ast.Load())
+                                    ]
+                                )
+                            ],
+                            keywords=[]
+                        ),
+                        type_comment=None))
+                ]
 
             col_def_len_args = [ast.Call(
                 func=ast.Name(
@@ -364,12 +433,30 @@ class PythonASTTransform(BaseTransform):
                 args=[
                     col_var_value
                 ],
-                keywords=[])]
+                keywords=[]),
+                ast.NameConstant('True'),  # dvalid
+                ast.Compare(
+                    left=ast.Name(
+                        id=settings.CURRENT_RECORD_VAR_NAME,
+                        ctx=ast.Load()
+                    ),
+                    ops=[ast.Eq()],
+                    comparators=[
+                        ast.Attribute(
+                            value=ast.Name(
+                                id=settings.META_NAME,
+                                ctx=ast.Load()
+                            ),
+                            attr='length',
+                            ctx=ast.Load())
+                    ]
+                )
+            ]
 
             if col.nullable:
                 col_def_len_args.insert(0,
-                    col_var_valid
-                )
+                                        col_var_valid
+                                        )
 
             col_def_len = ast.AnnAssign(
                 target=ast.Call(
@@ -398,7 +485,7 @@ class PythonASTTransform(BaseTransform):
                 schema_ast.append(col_def_len)
                 schema_ast.append(col_load_len)
 
-            schema_ast.append(col_load)
+            schema_ast.extend(col_load)
         return schema_ast
 
     def get_store_schema_ast(self, schema: pa.Schema):
@@ -407,6 +494,25 @@ class PythonASTTransform(BaseTransform):
             col_name_code = col.name + settings.OUTPUT_SUFFIX
 
             if col.type in settings.VAR_LENGTH_TYPES:
+
+                col_empty_element_args = [ast.Num(0), ast.NameConstant('False'),
+                                          ast.NameConstant('True')]  # Data = 0, dvalid = 0, last = 1
+
+                col_empty_element = ast.Expr(ast.BinOp(
+                    left=
+                    ast.Attribute(
+                        value=ast.Name(
+                            id=settings.OUTPUT_NAME,
+                            ctx=ast.Load()),
+                        attr=col.name,
+                        ctx=ast.Store()),
+                    op=ast.LShift(),
+                    right=ast.Call(
+                        func=self.type_resolver.resolve(arrow_type=col.type),
+                        args=col_empty_element_args,
+                        keywords=[]
+                    ),
+                    type_comment=None))
                 col_len_var = ast.Attribute(
                     value=ast.Name(
                         id=col_name_code + settings.LENGTH_SUFFIX,
@@ -471,7 +577,7 @@ class PythonASTTransform(BaseTransform):
                     output_col_ast = ast.If(
                         test=col_len_var_valid,
                         body=output_col_ast,
-                        orelse=[]
+                        orelse=[col_empty_element]
                     )
             else:
                 output_col_ast = ast.Expr(ast.BinOp(
@@ -561,6 +667,39 @@ class PythonASTTransform(BaseTransform):
                         ctx=ast.Load())
                 else:
                     col_len_var_valid = col_len_var
+
+                output_col_read_empty_element = [
+                    ast.Expr(ast.BinOp(
+                        left=
+                        ast.Attribute(
+                            value=ast.Name(
+                                id=settings.OUTPUT_NAME,
+                                ctx=ast.Load()),
+                            attr=col.name,
+                            ctx=ast.Store()),
+                        op=ast.RShift(),
+                        right=ast.Name(
+                            id=col_name_code,
+                            ctx=ast.Load()
+                        ),
+                        type_comment=None)),
+                    ast.Assign(
+                        targets=[
+                            ast.Subscript(
+                                value=col_var_value,
+                                slice=ast.Index(ast.Num(0)),
+                                ctx=ast.Load()
+                            )
+                        ],
+                        value=
+                        ast.Attribute(
+                            value=ast.Name(
+                                id=col_name_code,
+                                ctx=ast.Load()),
+                            attr='data',
+                            ctx=ast.Store()),
+                    )
+                ]
                 output_col_ast = [ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
@@ -636,7 +775,7 @@ class PythonASTTransform(BaseTransform):
                     output_col_ast = [ast.If(
                         test=col_var_valid,
                         body=output_col_ast,
-                        orelse=[]
+                        orelse=[output_col_read_empty_element]
                     )]
 
                 output_col_valid = ast.Assign(
@@ -658,15 +797,15 @@ class PythonASTTransform(BaseTransform):
                         id=col_name_code,
                         ctx=ast.Load()),
                     type_comment=None)),
-                ast.Assign(
-                    targets=[col_var_value],
-                    value=ast.Attribute(
-                        value=ast.Name(
-                            id=col_name_code,
+                    ast.Assign(
+                        targets=[col_var_value],
+                        value=ast.Attribute(
+                            value=ast.Name(
+                                id=col_name_code,
+                                ctx=ast.Load()),
+                            attr='data',
                             ctx=ast.Load()),
-                        attr='data',
-                        ctx=ast.Load()),
-                )
+                    )
                 ]
 
                 col_var_valid_src = ast.Attribute(
@@ -739,11 +878,32 @@ class PythonASTTransform(BaseTransform):
                                    test_data, False)
 
     def get_input_ast(self) -> list:
-        return self.get_load_schema_ast(self.in_schema)
+        return [
+                   ast.AnnAssign(
+                       target=ast.Name(
+                           id=settings.CURRENT_RECORD_VAR_NAME,
+                           ctx=ast.Store()),
+                       annotation=ast.Name(id='static unsigned int', ctx=ast.Load()),
+                       value=ast.Num(0),
+                       simple=1),
+                   make_comment('pragma HLS reset variable={}'.format(settings.CURRENT_RECORD_VAR_NAME)),
+                   ast.AugAssign(
+                       target=ast.Name(
+                           id=settings.CURRENT_RECORD_VAR_NAME,
+                           ctx=ast.AugLoad()),
+                       op=ast.Add(),
+                       value=ast.Num(1)
+                   )
+               ] + self.get_load_schema_ast(self.in_schema)
 
     def get_port_pragma_ast(self) -> list:
         port_pragma_ast = []
         port_pragma_ast.append(make_comment('pragma HLS INTERFACE {} port=return'.format(settings.BLOCK_LEVEL_IO_TYPE)))
+        port_pragma_ast.append(
+            make_comment(
+                'pragma HLS INTERFACE {0} port={1}.{2}'.format(settings.META_PORT_TYPE, settings.META_NAME, 'length')))
+        port_pragma_ast.append(
+            make_comment('pragma HLS DATA_PACK variable={0}'.format(settings.META_NAME)))
 
         # TODO Add name={2}{1} back in
         for col in self.in_schema:
@@ -800,14 +960,152 @@ class PythonASTTransform(BaseTransform):
 
         return port_pragma_ast
 
+    def get_grab_empty_ast(self, schema: pa.Schema) -> list:
+        grab_empty_ast = [make_comment('close streams')]
+        for col in schema:
+
+            col_name_code = col.name + settings.OUTPUT_SUFFIX
+
+            output_col_def = ast.AnnAssign(
+                target=ast.Name(
+                    id=col_name_code,
+                    ctx=ast.Store()),
+                annotation=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
+                value=None,
+                simple=1)
+
+            output_col_def_len = ast.AnnAssign(
+                target=ast.Name(
+                    id=col_name_code + settings.LENGTH_SUFFIX,
+                    ctx=ast.Store()),
+                annotation=self.type_resolver.resolve(arrow_type=settings.LENGTH_TYPE, as_nullable=col.nullable),
+                value=None,
+                simple=1)
+
+            output_col_ast = ast.Expr(ast.BinOp(
+                left=
+                ast.Attribute(
+                    value=ast.Name(
+                        id=settings.OUTPUT_NAME,
+                        ctx=ast.Load()),
+                    attr=col.name,
+                    ctx=ast.Store()),
+                op=ast.RShift(),
+                right=ast.Name(
+                    id=col_name_code,
+                    ctx=ast.Load()
+                ),
+                type_comment=None))
+
+            output_col_ast_len = ast.Expr(ast.BinOp(
+                left=
+                ast.Attribute(
+                    value=ast.Name(
+                        id=settings.OUTPUT_NAME,
+                        ctx=ast.Load()),
+                    attr=col.name + settings.LENGTH_SUFFIX,
+                    ctx=ast.Store()),
+                op=ast.RShift(),
+                right=ast.Name(
+                    id=col_name_code + settings.LENGTH_SUFFIX,
+                    ctx=ast.Load()
+                ),
+                type_comment=None))
+
+            if col.type in settings.VAR_LENGTH_TYPES:
+                grab_empty_ast.append(output_col_def_len)
+                grab_empty_ast.append(output_col_ast_len)
+            else:
+                grab_empty_ast.append(output_col_def)
+                grab_empty_ast.append(output_col_ast)
+
+        return [ast.If(
+            test=ast.Compare(
+                left=ast.Name(
+                    id=settings.CURRENT_RECORD_VAR_NAME,
+                    ctx=ast.Load()
+                ),
+                ops=[ast.Eq()],
+                comparators=[
+                    ast.Attribute(
+                        value=ast.Name(
+                            id=settings.META_NAME,
+                            ctx=ast.Load()),
+                        attr='length',
+                        ctx=ast.Store()),
+                ]
+            ),
+            body=grab_empty_ast,
+            orelse=[]
+        )]
+
+    def get_write_empty_ast(self, schema: pa.Schema) -> list:
+        write_empty_ast = [make_comment('close streams')]
+        for col in schema:
+
+            col_name_code = col.name + settings.OUTPUT_SUFFIX
+
+            col_load = ast.Expr(ast.BinOp(
+                left=ast.Attribute(
+                    value=ast.Name(
+                        id=settings.OUTPUT_NAME,
+                        ctx=ast.Load()),
+                    attr=col.name + (settings.LENGTH_SUFFIX if col.type in settings.VAR_LENGTH_TYPES else ''),
+                    ctx=ast.Load()),
+                op=ast.LShift(),
+                right=ast.Call(
+                    func=self.type_resolver.resolve(
+                        arrow_type=col.type if col.type not in settings.VAR_LENGTH_TYPES else settings.LENGTH_TYPE,
+                        as_nullable=col.nullable),
+                    args=[
+                        ast.Num(0),
+                        ast.NameConstant('False'),  # dvalid
+                        ast.Attribute(
+                            value=ast.Name(
+                                id=col_name_code + (
+                                    settings.LENGTH_SUFFIX if col.type in settings.VAR_LENGTH_TYPES else ''),
+                                ctx=ast.Load()),
+                            attr='last',
+                            ctx=ast.Load())
+                    ],
+                    keywords=[]
+                ),
+                type_comment=None))
+
+            if col.nullable:
+                col_load.value.right.args.insert(0, ast.NameConstant('False'))
+            write_empty_ast.append(col_load)
+
+        return [ast.If(
+            test=ast.Compare(
+                left=ast.Name(
+                    id=settings.CURRENT_RECORD_VAR_NAME,
+                    ctx=ast.Load()
+                ),
+                ops=[ast.Eq()],
+                comparators=[
+                    ast.Attribute(
+                        value=ast.Name(
+                            id=settings.META_NAME,
+                            ctx=ast.Load()),
+                        attr='length',
+                        ctx=ast.Store()),
+                ]
+            ),
+            body=write_empty_ast,
+            orelse=[]
+        )]
+
     def get_output_ast(self) -> list:
+        grab_empty_ast = []
+
         return [
             ast.If(
                 test=ast.Name(
                     id=settings.PASS_VAR_NAME,
                     ctx=ast.Load()),
                 body=self.get_store_schema_ast(self.out_schema),
-                orelse=[])
+                orelse=self.get_write_empty_ast(self.out_schema))
         ]
 
     def get_input_test_ast(self) -> list:
@@ -825,7 +1123,21 @@ class PythonASTTransform(BaseTransform):
                            ctx=ast.Store()),
                        annotation=ast.Name(id='out_schema', ctx=ast.Load()),
                        value=None,
-                       simple=1)
+                       simple=1),
+                   ast.AnnAssign(
+                       target=ast.Name(
+                           id=settings.CURRENT_RECORD_VAR_NAME,
+                           ctx=ast.Store()),
+                       annotation=ast.Name(id='static unsigned int', ctx=ast.Load()),
+                       value=ast.Num(0),
+                       simple=1),
+                   ast.AugAssign(
+                       target=ast.Name(
+                           id=settings.CURRENT_RECORD_VAR_NAME,
+                           ctx=ast.AugLoad()),
+                       op=ast.Add(),
+                       value=ast.Num(1)
+                   )
 
                ] + self.get_load_test_ast(self.in_schema)
 
@@ -836,7 +1148,7 @@ class PythonASTTransform(BaseTransform):
                     id=settings.PASS_VAR_NAME,
                     ctx=ast.Load()),
                 body=self.get_store_test_ast(self.out_schema),
-                orelse=[])
+                orelse=self.get_grab_empty_ast(self.out_schema))
         ]
 
     # endregion
@@ -997,7 +1309,7 @@ class PythonASTTransform(BaseTransform):
     def visit_FunctionCall(self, node: ast_nodes.FunctionCall) -> Union[ast.Call, PrePostAST]:
         func_metadata = self.func_resolver.resolve(node.func)
 
-        #node.params = list(map(self.apply_value_reference, node.params))
+        # node.params = list(map(self.apply_value_reference, node.params))
 
         func_ast = ast.Call(
             func=ast.Name(
@@ -1015,50 +1327,34 @@ class PythonASTTransform(BaseTransform):
         return func_ast
 
     def visit_ColumnReference(self, node: ast_nodes.ColumnReference) -> ast.Name:
-        if node.is_valid_reference:
-            return ast.Attribute(
-                value=ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                ),
-                attr='valid',
-                ctx=ast.Load())
-        elif not node.is_plain_reference:
-            return ast.Attribute(
-                value=ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                ),
-                attr='data',
-                ctx=ast.Load())
-        else:
-            return ast.Name(
-                id=node.id,
-                ctx=ast.Load()
-            )
+        if isinstance(node.metadata, ReferenceMetadata):
+            if node.metadata.signal is not None:
+                return ast.Attribute(
+                    value=ast.Name(
+                        id=node.id,
+                        ctx=ast.Load()
+                    ),
+                    attr=node.metadata.signal,
+                    ctx=ast.Load())
+        return ast.Name(
+            id=node.id,
+            ctx=ast.Load()
+        )
 
     def visit_IntermediaryReference(self, node: ast_nodes.IntermediaryReference) -> ast.Name:
-        if node.is_valid_reference:
-            return ast.Attribute(
-                value=ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                ),
-                attr='valid',
-                ctx=ast.Load())
-        elif not node.is_plain_reference:
-            return ast.Attribute(
-                value=ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                ),
-                attr='data',
-                ctx=ast.Load())
-        else:
-            return ast.Name(
-                    id=node.id,
-                    ctx=ast.Load()
-                )
+        if isinstance(node.metadata, ReferenceMetadata):
+            if node.metadata.signal is not None:
+                return ast.Attribute(
+                    value=ast.Name(
+                        id=node.id,
+                        ctx=ast.Load()
+                    ),
+                    attr=node.metadata.signal,
+                    ctx=ast.Load())
+        return ast.Name(
+            id=node.id,
+            ctx=ast.Load()
+        )
 
     def visit_SelectColumn(self, node: ast_nodes.SelectColumn) -> list:
         # self.apply_value_reference(node.value)
@@ -1084,14 +1380,35 @@ class PythonASTTransform(BaseTransform):
             col_name_code = col.name + settings.OUTPUT_SUFFIX
 
             select_col_valid = copy.deepcopy(select_col)
+            select_col_dvalid = copy.deepcopy(select_col)
+            select_col_last = copy.deepcopy(select_col)
             col_value = self.visit(select_col)
+
             if col.nullable:
                 col_value_valid = self.visit(
                     self.constant_propagation_transform.transform(
-                        self.strip_nullables_transform.transform(select_col_valid),
+                        self.aux_signal_transform.transform(select_col_valid, signal='valid', only_nullables=True,
+                                                            merge_op=ast_nodes.AndOperator),
                         skip_functions=True
                     )
                 )
+
+            col_value_last = self.visit(
+                self.constant_propagation_transform.transform(
+                    self.aux_signal_transform.transform(select_col_last, signal='last', only_nullables=False,
+                                                        merge_op=ast_nodes.OrOperator,
+                                                        default_value=ast_nodes.FalseValue),
+                    skip_functions=True
+                )
+            )
+
+            col_value_dvalid = self.visit(
+                self.constant_propagation_transform.transform(
+                    self.aux_signal_transform.transform(select_col_dvalid, signal='dvalid', only_nullables=False,
+                                                        merge_op=ast_nodes.AndOperator),
+                    skip_functions=True
+                )
+            )
 
             col_len_ast = ast.Name(id="VAR_LENGTH", ctx=ast.Load())
 
@@ -1122,6 +1439,16 @@ class PythonASTTransform(BaseTransform):
             else:
                 args_len_ast = [col_len_ast]
 
+            if isinstance(col_value, PrePostAST):
+                if isinstance(col_value.metadata, FunctionMetadata):
+                    if col_value.metadata.manual_signal_passthrough:
+                        args_len_ast.append(
+                            col_value_dvalid
+                        )
+                        args_len_ast.append(
+                            col_value_last
+                        )
+
             target_ast = ast.Call(
                 func=ast.Name(
                     id=col_name_code,
@@ -1144,7 +1471,7 @@ class PythonASTTransform(BaseTransform):
                 col_ast = ast.AnnAssign(
                     target=target_ast,
                     annotation=self.type_resolver.resolve(arrow_type=col.type, as_nullable=False,
-                                                               as_pointer=True),
+                                                          as_pointer=True),
                     value=None,
                     simple=1)
             else:
@@ -1201,6 +1528,12 @@ class PythonASTTransform(BaseTransform):
             args=ast.arguments(
                 args=[
                     ast.arg(
+                        arg=settings.META_NAME,
+                        annotation=ast.Index(ast.Name(
+                            id='RecordBatchMeta',
+                            ctx=ast.Load())),
+                        type_comment=None),
+                    ast.arg(
                         arg=settings.INPUT_NAME,
                         annotation=ast.Index(ast.Name(
                             id='in_schema',
@@ -1240,6 +1573,12 @@ class PythonASTTransform(BaseTransform):
             args=ast.arguments(
                 args=[
                     ast.arg(
+                        arg=settings.META_NAME,
+                        annotation=ast.Index(ast.Name(
+                            id='RecordBatchMeta',
+                            ctx=ast.Load())),
+                        type_comment=None),
+                    ast.arg(
                         arg=settings.INPUT_NAME + settings.TEST_SUFFIX,
                         annotation=ast.Index(ast.Name(
                             id='in_schema' + settings.TEST_SUFFIX,
@@ -1274,6 +1613,10 @@ class PythonASTTransform(BaseTransform):
                             ctx=ast.Load()
                         ),
                         args=[
+                            ast.Name(
+                                id=settings.META_NAME,
+                                ctx=ast.Load()
+                            ),
                             ast.Name(
                                 id=settings.INPUT_NAME,
                                 ctx=ast.Load()

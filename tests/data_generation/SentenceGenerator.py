@@ -2,10 +2,14 @@ from tests.data_generation.BaseGenerator import BaseGenerator
 import lipsum
 from fletcherfiltering import settings
 import math
+import random
+from .. import test_settings
 
 class SentenceGenerator(BaseGenerator):
 
     def generate(self, maxlength: int = settings.VAR_LENGTH) -> str:
+        if random.random() < test_settings.EMPTYSTRINGPROBABILITY:
+            return ""
         sentence = lipsum.generate_sentences(1)
         if len(sentence) > maxlength:
             indexes = [pos for pos, char in enumerate(sentence) if char == ' ' and pos < maxlength]
