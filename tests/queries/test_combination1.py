@@ -17,6 +17,12 @@ class Combination1(BaseQuery):
                                     ('timestamp4', pa.timestamp('ns'), False)
                                     ])
 
+        metadata_in = {b'fletcher_mode': b'read',
+                    b'fletcher_name': b'in'}
+
+        # Add the metadata to the schema
+        self.in_schema = self.in_schema.add_metadata(metadata_in)
+
         self.in_schema_pk = 'pkid'
 
         self.out_schema = pa.schema([('int1', pa.int32(), False),
@@ -27,6 +33,12 @@ class Combination1(BaseQuery):
                                      ('timestamp3', pa.timestamp('ms'), False),
                                      ('timestamp4', pa.timestamp('ns'), False)
                                      ])
+
+        metadata_out = {b'fletcher_mode': b'write',
+                        b'fletcher_name': b'out'}
+
+        # Add the metadata to the schema
+        self.out_schema = self.out_schema.add_metadata(metadata_out)
 
         self.query = """select 
             `int1`+`int2` as `int1`,

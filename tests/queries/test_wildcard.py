@@ -10,11 +10,23 @@ class Wildcard(BaseQuery):
                                     ('string1', pa.string(), False),
                                     ('string2', pa.string(), False)])
 
+        metadata_in = {b'fletcher_mode': b'read',
+                    b'fletcher_name': b'in'}
+
+        # Add the metadata to the schema
+        self.in_schema = self.in_schema.add_metadata(metadata_in)
+
         self.in_schema_pk = 'pkid'
 
         self.out_schema = pa.schema([('pkid', pa.int32(), False),
                                     ('string1', pa.string(), False),
                                     ('string2', pa.string(), False)])
+
+        metadata_out = {b'fletcher_mode': b'write',
+                    b'fletcher_name': b'out'}
+
+        # Add the metadata to the schema
+        self.out_schema = self.out_schema.add_metadata(metadata_out)
 
         self.query = """select * FROM `{0}`""".format(self.name)
 
