@@ -76,7 +76,6 @@ def handle_column(cols, query):
                 value['data'] = None
             line.append("{}{}{}".format(colors, value['data'], RESET))
         else:
-            print("Found empty record: {}".format(value))
             line.append("<nothing>")
     return line
 
