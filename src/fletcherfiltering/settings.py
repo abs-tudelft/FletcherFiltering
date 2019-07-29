@@ -30,7 +30,7 @@ OVERWRITE_DATA = True
 
 VAR_LENGTH_TYPES = [pa.string()]
 VAR_LENGTH = 32
-PORT_TYPE = 'ap_fifo' # axis would be proper, but it has weird reserved named resulting in TID suffixes. And has longer latency.
+PORT_TYPE = 'ap_hs' # axis would be proper, but it has weird reserved named resulting in TID suffixes. And has longer latency.
 BLOCK_LEVEL_IO_TYPE = 'ap_ctrl_hs' # ap_ctrl_chained if backpressure is required.
 META_PORT_TYPE = 'register'
 PASS_VAR_NAME = '__pass_record'
