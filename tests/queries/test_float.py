@@ -17,7 +17,7 @@
 from tests.helpers.base_query import BaseQuery
 import pyarrow as pa
 from pathlib import Path
-
+from fletcherfiltering import settings
 
 class Float(BaseQuery):
     def __init__(self, printer, cnx, working_dir_base=Path('/tmp'), **kwargs):
@@ -28,7 +28,7 @@ class Float(BaseQuery):
                                     ('double1', pa.float64(), False)])
 
         metadata_in = {b'fletcher_mode': b'read',
-                    b'fletcher_name': b'in'}
+                    b'fletcher_name': settings.INPUT_NAME.encode('ascii')}
 
         # Add the metadata to the schema
         self.in_schema = self.in_schema.add_metadata(metadata_in)
@@ -44,7 +44,7 @@ class Float(BaseQuery):
                                      ('double1x2', pa.float64(), False)])
 
         metadata_out = {b'fletcher_mode': b'write',
-                        b'fletcher_name': b'out'}
+                        b'fletcher_name': settings.OUTPUT_NAME.encode('ascii')}
 
         # Add the metadata to the schema
         self.out_schema = self.out_schema.add_metadata(metadata_out)

@@ -17,6 +17,7 @@
 from tests.helpers.base_query import BaseQuery
 import pyarrow as pa
 from pathlib import Path
+from fletcherfiltering import settings
 
 
 class Combination2(BaseQuery):
@@ -29,7 +30,7 @@ class Combination2(BaseQuery):
                                     ('double1', pa.float64(), False)])
 
         metadata_in = {b'fletcher_mode': b'read',
-                    b'fletcher_name': b'in'}
+                    b'fletcher_name': settings.INPUT_NAME.encode('ascii')}
 
         # Add the metadata to the schema
         self.in_schema = self.in_schema.add_metadata(metadata_in)
@@ -40,7 +41,7 @@ class Combination2(BaseQuery):
                                      ('concat2', pa.string(), False)])
 
         metadata_out = {b'fletcher_mode': b'write',
-                        b'fletcher_name': b'out'}
+                        b'fletcher_name': settings.OUTPUT_NAME.encode('ascii')}
 
         # Add the metadata to the schema
         self.out_schema = self.out_schema.add_metadata(metadata_out)

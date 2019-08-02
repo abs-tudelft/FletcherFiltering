@@ -17,7 +17,7 @@
 from tests.helpers.base_query import BaseQuery
 import pyarrow as pa
 from pathlib import Path
-
+from fletcherfiltering import settings
 
 class Nullable(BaseQuery):
     def __init__(self, printer, cnx, working_dir_base=Path('/tmp'), **kwargs):
@@ -27,7 +27,7 @@ class Nullable(BaseQuery):
                                     ('string1', pa.string(), True)])
 
         metadata_in = {b'fletcher_mode': b'read',
-                    b'fletcher_name': b'in'}
+                    b'fletcher_name': settings.INPUT_NAME.encode('ascii')}
 
         # Add the metadata to the schema
         self.in_schema = self.in_schema.add_metadata(metadata_in)
@@ -42,7 +42,7 @@ class Nullable(BaseQuery):
                                     ('concat', pa.string(), True)])
 
         metadata_out = {b'fletcher_mode': b'write',
-                        b'fletcher_name': b'out'}
+                        b'fletcher_name': settings.OUTPUT_NAME.encode('ascii')}
 
         # Add the metadata to the schema
         self.out_schema = self.out_schema.add_metadata(metadata_out)
