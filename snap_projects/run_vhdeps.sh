@@ -3,8 +3,8 @@ ROOT_DIR=$(dirname $(readlink -f "$BASH_SOURCE"))
 
 set -e
 
-## project, compile_path
-package(){
+## project, compile_path, backend
+run_vhdeps(){
     ACTION_ROOT=`pwd`/$1
     COMPILE_PATH=`realpath $2`
     IP_PATH=$COMPILE_PATH/$1/automated_tests/impl/ip/hdl/vhdl
@@ -26,7 +26,7 @@ package(){
     cp $COMPILE_PATH/*.tcl $ACTION_ROOT/src
     cp $COMPILE_PATH/CMakeLists.txt $ACTION_ROOT/src
 
-    FILES=`vhdeps -i $FLETCHER_HARDWARE_PATH -i $IP_PATH -i $ACTION_ROOT/hw dump SimTop_tc | awk '{print $NF}'`
+    FILES=`vhdeps -i $FLETCHER_HARDWARE_PATH -i $IP_PATH -i $ACTION_ROOT/hw $3 SimTop_tc | awk '{print $NF}'`
     PREFIX=`printf "%s\n" "${FILES[@]}" | sed -e 'N;s/^\(.*\).*\n\1.*$/\1\n\1/;D'`
 
     echo "Longest common prefix $PREFIX"
@@ -51,9 +51,10 @@ package(){
 
 usage()
 {
-    echo "usage: $(basename $BASH_SOURCE) -p project -o ../fletcherfiltering_test_workspace/<project> | [-h]]"
+    echo "usage: $(basename $BASH_SOURCE) -p project -o ../fletcherfiltering_test_workspace/<project> [-b backend] | [-h]]"
 }
 
+backend=ghdl
 project=Simple
 compile_path=../fletcherfiltering_test_workspace/$project
 
@@ -62,8 +63,11 @@ while [ "$1" != "" ]; do
         -p | --project )        shift
                                 project=$1
                                 ;;
-        -o | --compile_path )         shift
+        -o | --compile_path )   shift
                                 compile_path=$1
+                                ;;
+        -b | --backend )        shift
+                                backend=$1
                                 ;;
         -h | --help )           usage
                                 exit
@@ -78,4 +82,5 @@ done
 echo "Project: $project"
 echo "Compile Path: $compile_path"
 echo "Fletcher Path: $FLETCHER_DIR/hardware"
-package $project $compile_path
+echo "Vhdeps Backend: $FLETCHER_DIR/hardware"
+run_vhdeps $project $compile_path $backend

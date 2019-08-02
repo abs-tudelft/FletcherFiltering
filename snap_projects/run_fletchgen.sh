@@ -19,7 +19,7 @@ run_fetchgen(){
 
 usage()
 {
-    echo "usage: snap_script -p project -o ../fletcherfiltering_test_workspace/<project> | [-h]]"
+    echo "usage: $(basename $BASH_SOURCE) -p project -o ../fletcherfiltering_test_workspace/<project> | [-h]]"
 }
 
 docker=
@@ -31,8 +31,8 @@ while [ "$1" != "" ]; do
         -p | --project )        shift
                                 project=$1
                                 ;;
-        -o | --compile_path )         shift
-                                output_path=$1
+        -o | --compile_path )   shift
+                                compile_path=$1
                                 ;;
         -d | --docker )         docker=1
                                 ;;

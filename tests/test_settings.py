@@ -17,7 +17,7 @@
 import platform
 from pathlib import Path
 
-DEFAULT_DATA_SIZE = 10
+DEFAULT_DATA_SIZE = 100
 
 WORKSPACE_NAME = 'fletcherfiltering_test_workspace'
 BUILD_CONFIG = 'Release'

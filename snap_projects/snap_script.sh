@@ -13,7 +13,7 @@ run_target()
 
 usage()
 {
-    echo "usage: snap_script -p Project [-t Target] | [-h]]"
+    echo "usage: $(basename $BASH_SOURCE) -p Project [-t Target] | [-h]]"
 }
 
 

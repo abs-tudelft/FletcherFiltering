@@ -501,5 +501,6 @@ cmake-build-*/
 **/mysql-data/**
 snap_projects/Simple/*
 snap_projects/Float/*
+snap_projects/Nullable/*
 
 *_pkg.tar.gz

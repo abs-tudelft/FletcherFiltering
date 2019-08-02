@@ -67,6 +67,7 @@ architecture Implementation of FletcherSimple is
   constant REG_RETURN1                            : natural :=  3;
 
   -- RecordBatch ranges:
+  --TODO GENERATE
   constant REG_IN_PKID_FIRSTIDX                        : natural :=  4;
   constant REG_IN_PKID_LASTIDX                         : natural :=  5;
 
@@ -74,23 +75,24 @@ architecture Implementation of FletcherSimple is
   constant REG_OUT_PKID_LASTIDX                        : natural :=  7;
 
   -- Buffer addresses:
+  --TODO GENERATE
   constant REG_IN_PKID_BUF_LO                     : natural :=  8;
   constant REG_IN_PKID_BUF_HI                     : natural :=  9;
   constant REG_OUT_PKID_BUF_LO                    : natural :=  10;
   constant REG_OUT_PKID_BUF_HI                    : natural :=  11;
 
   -- Array of MMIO registers:
-  constant NUM_REGS                               : natural := 12;
+  constant NUM_REGS                               : natural := 12; --TODO update
   constant REG_WIDTH                              : natural := 32;
 
-  type reg_array_t is array(natural range <>) of std_logic_vector(31 downto 0);
+  type reg_array_t is array(natural range <>) of std_logic_vector(REG_WIDTH-1 downto 0);
 
-  signal rreg_concat            : std_logic_vector(NUM_REGS*32-1 downto 0);
+  signal rreg_concat            : std_logic_vector(NUM_REGS*REG_WIDTH-1 downto 0);
   signal rreg_array             : reg_array_t(0 to NUM_REGS-1);
   signal rreg_en                : std_logic_vector(NUM_REGS-1 downto 0);
 
   signal wreg_array             : reg_array_t(0 to NUM_REGS-1);
-  signal wreg_concat            : std_logic_vector(NUM_REGS*32-1 downto 0);
+  signal wreg_concat            : std_logic_vector(NUM_REGS*REG_WIDTH-1 downto 0);
 
   -----------------------------------------------------------------------------
   -- Control signals
@@ -117,6 +119,7 @@ architecture Implementation of FletcherSimple is
   signal ap_start, ap_done, ap_idle, ap_ready : STD_LOGIC;
   signal meta_length_V : STD_LOGIC_VECTOR(31 downto 0);
 
+  --TODO generate
   signal ff_in_pkid_V : STD_LOGIC_VECTOR (33 downto 0);
   signal ff_in_pkid_V_data : STD_LOGIC_VECTOR (31 downto 0);
   signal ff_in_pkid_V_dvalid : STD_LOGIC;
@@ -146,7 +149,7 @@ begin
   axi_mmio_inst : entity work.AxiMmio
     generic map (
       BUS_ADDR_WIDTH     => 32,
-      BUS_DATA_WIDTH     => 32,
+      BUS_DATA_WIDTH     => REG_WIDTH,
       NUM_REGS           => NUM_REGS,
       REG_CONFIG         => "WRRRWWWWWWWWR",
       SLV_R_SLICE_DEPTH  => 0,
@@ -179,10 +182,10 @@ begin
 
   -- Turn signals into something more readable
   write_regs_unconcat: for I in 0 to NUM_REGS-1 generate
-    wreg_array(I) <= wreg_concat((I+1)*32-1 downto I*32);
+    wreg_array(I) <= wreg_concat((I+1)*REG_WIDTH-1 downto I*REG_WIDTH);
   end generate;
   read_regs_concat: for I in 0 to NUM_REGS-1 generate
-    rreg_concat((I+1)*32-1 downto I*32) <= rreg_array(I);
+    rreg_concat((I+1)*REG_WIDTH-1 downto I*REG_WIDTH) <= rreg_array(I);
   end generate;
 
   -- Always enable read registers
@@ -201,24 +204,8 @@ begin
   -----------------------------------------------------------------------------
   -- Kernel
   -----------------------------------------------------------------------------
-  -- hls_kernel_inst: Simple 
-  --     port map (
-  --         ap_clk => kcd_clk,
-  --         ap_rst => kcd_reset,
-  --         ap_start => ap_start,
-  --         ap_done => ap_done,
-  --         ap_idle => ap_idle,
-  --         ap_ready => ap_ready,
-  --         meta_length_V => meta_length_V,
-  --         ff_in_pkid_V => ff_in_pkid_V,
-  --         ff_in_pkid_V_ap_vld => ff_in_pkid_V_ap_vld,
-  --         ff_in_pkid_V_ap_ack => ff_in_pkid_V_ap_ack,
-  --         ff_out_pkid_V => ff_out_pkid_V,
-  --         ff_out_pkid_V_ap_vld => ff_out_pkid_V_ap_vld,
-  --         ff_out_pkid_V_ap_ack => ff_out_pkid_V_ap_ack,
-  --         ap_return => ap_return
-  --   );
 
+--TODO generate
   hls_kernel_inst: entity work.Simple 
       port map (
           ap_clk => kcd_clk,
@@ -238,6 +225,7 @@ begin
     );
 
   -- Unpack the data buses
+  --TODO generate
   ff_out_pkid_V_dvalid <= ff_out_pkid_V(0);
   ff_out_pkid_V_last <= ff_out_pkid_V(1);
   ff_out_pkid_V_data <= ff_out_pkid_V(33 downto 2);
@@ -250,6 +238,7 @@ begin
   -- ap_ready, ap_done, ap_start are already hooked up in the state machine
   meta_length_V <= std_logic_vector(unsigned(wreg_array(REG_IN_PKID_LASTIDX))-unsigned(wreg_array(REG_IN_PKID_FIRSTIDX)));
 
+  --TODO generate
   ff_in_pkid_V_data <= ff_in_pkid;
   ff_in_pkid_V_dvalid <= ff_in_pkid_dvalid;
   ff_in_pkid_V_last <= ff_in_pkid_last;
@@ -271,6 +260,7 @@ begin
   -----------------------------------------------------------------------------
 
   -- Provide base address to ArrayReader
+  --TODO generate
   ff_in_pkid_cmd_ctrl <= wreg_array(REG_IN_PKID_BUF_HI) 
                     & wreg_array(REG_IN_PKID_BUF_LO);
 
@@ -279,6 +269,7 @@ begin
                     & wreg_array(REG_OUT_PKID_BUF_LO);
 
   -- Set the first and last index on our array
+  --TODO generate
   ff_in_pkid_cmd_firstIdx <= wreg_array(REG_IN_PKID_FIRSTIDX);
   ff_in_pkid_cmd_lastIdx  <= wreg_array(REG_IN_PKID_LASTIDX);
   ff_out_pkid_cmd_firstIdx <= wreg_array(REG_OUT_PKID_FIRSTIDX);
@@ -292,12 +283,12 @@ begin
     -- HLS Control signals
     ap_done, ap_ready, ap_idle, ap_return,
     -- Command streams
-    ff_in_pkid_cmd_ready, ff_out_pkid_cmd_ready,
+    ff_in_pkid_cmd_ready, ff_out_pkid_cmd_ready, --TODO generate
     -- Data streams
-    ff_in_pkid_valid, ff_out_pkid_ready, ff_in_pkid_last, ff_in_pkid_dvalid,
-    ff_out_pkid_V_write, ff_out_pkid_ready, ff_out_pkid_V_last, ff_out_pkid_V_dvalid,
+    ff_in_pkid_valid, ff_out_pkid_ready, ff_in_pkid_last, ff_in_pkid_dvalid, --TODO generate
+    ff_out_pkid_V_write, ff_out_pkid_ready, ff_out_pkid_V_last, ff_out_pkid_V_dvalid, --TODO generate
     -- Unlock streams
-    ff_in_pkid_unl_valid, ff_out_pkid_unl_valid,
+    ff_in_pkid_unl_valid, ff_out_pkid_unl_valid, --TODO generate
     -- Internal
     pass_counter,
     total_counter
@@ -307,13 +298,13 @@ begin
     -- Default values:
     
     -- No command to "pkid" ArrayReader
-    ff_in_pkid_cmd_valid <= '0';
+    ff_in_pkid_cmd_valid <= '0'; --TODO generate
     -- No command to "pkid" ArrayWriter
-    ff_out_pkid_cmd_valid <= '0';
+    ff_out_pkid_cmd_valid <= '0'; --TODO generate
     -- Do not accept values from the "pkid" ArrayReader
-    ff_in_pkid_unl_ready <= '0';
+    ff_in_pkid_unl_ready <= '0'; --TODO generate
     -- Do not accept values from the "pkid" ArrayWriter
-    ff_out_pkid_unl_ready <= '0';
+    ff_out_pkid_unl_ready <= '0'; --TODO generate
     -- Retain counter values
     pass_counter_next <= pass_counter;
     total_counter_next <= total_counter;
@@ -349,10 +340,10 @@ begin
         ap_start <= '1';
 
         -- Send address and row indices to the ArrayReader
-        ff_in_pkid_cmd_valid <= '1';
+        ff_in_pkid_cmd_valid <= '1'; --TODO generate
         -- Send address and row indices to the ArrayWriter
-        ff_out_pkid_cmd_valid <= '1';
-        if ff_in_pkid_cmd_ready = '1' and ff_out_pkid_cmd_ready = '1' then
+        ff_out_pkid_cmd_valid <= '1'; --TODO generate
+        if ff_in_pkid_cmd_ready = '1' and ff_out_pkid_cmd_ready = '1' then --TODO generate
           -- ArrayReader and ArrayWriter have received the commands
           state_next <= RUNNING;
         end if;
@@ -362,10 +353,6 @@ begin
         stat_busy <= '1';
         stat_idle <= '0';
         ap_start <= '1';
-        -- Always ready to accept input
-        --ff_in_pkid_ready <= ap_ready; -- probably need to be ap_ready
-        -- Always ready to accept output
-        --ff_out_pkid_ready <= ap_ready; -- might need to be ap_done
 
         if ap_done = '1' then
           -- Count the record
@@ -375,7 +362,7 @@ begin
           end if;
 
           -- Wait for last element from Kernel
-          if ff_out_pkid_V_last = '1' then
+          if ff_out_pkid_V_last = '1' then --TODO generate
             state_next <= DONE;
           end if;
         end if;
