@@ -39,31 +39,33 @@ MYSQL_PASSWORD='pfUcFN4S9Qq7X6NDBMHk'
 MYSQL_HOST='127.0.0.1'
 MYSQL_DATABASE='fletcherfiltering'
 
+TEST_PARTS = []
+CMAKE_GENERATOR = 'Ninja'
+VIVADO_DIR = Path('/opt/Xilinx/Vivado/2018.1')
+VIVADO_BIN_DIR = VIVADO_DIR / 'bin'
+VIVADO_EXEC = 'vivado'
+VIVADO_HLS_EXEC = 'vivado_hls'
+HLS_INCLUDE_PATH = [VIVADO_DIR / 'include']
+HLS_LINK_PATH = [VIVADO_DIR / Path('linux64/tools/fpo_v7_0')]
+HLS_LIBS = ['gmp', 'mpfr', 'Ip_floating_point_v7_0_bitacc_cmodel']
+
 if platform.system() == "Windows":
     TEST_PARTS = ['sql', 'vivado']
     MYSQL_HOST = '10.211.55.2'
-    CMAKE_GENERATOR = 'Visual Studio 15 2017 Win64'
+    #CMAKE_GENERATOR = 'Visual Studio 15 2017 Win64'
     VIVADO_DIR = Path('C:/Xilinx/Vivado/2019.1')
     VIVADO_BIN_DIR = VIVADO_DIR / 'bin'
+    VIVADO_EXEC = VIVADO_BIN_DIR / 'vivado.bat'
     VIVADO_HLS_EXEC = VIVADO_BIN_DIR / 'vivado_hls.bat'
     HLS_INCLUDE_PATH = [VIVADO_DIR / 'include']
     HLS_LINK_PATH = [VIVADO_DIR / Path('win64/tools/fpo_v7_0')]
     HLS_LIBS = ['libgmp', 'libmpfr', 'libIp_floating_point_v7_0_bitacc_cmodel']
 elif platform.system() == "Darwin":
     TEST_PARTS = []
-    CMAKE_GENERATOR = 'Ninja'
+    #CMAKE_GENERATOR = 'Ninja'
     VIVADO_DIR = Path('/Users/erwin/Xilinx/Vivado/2019.1')
     VIVADO_BIN_DIR = VIVADO_DIR / 'bin'
-    VIVADO_HLS_EXEC = VIVADO_BIN_DIR / 'vivado_hls.bat'
+    #VIVADO_HLS_EXEC = VIVADO_BIN_DIR / 'vivado_hls'
     HLS_INCLUDE_PATH = [VIVADO_DIR / 'include']
     HLS_LINK_PATH = []
     HLS_LIBS = ''
-else:
-    TEST_PARTS = ['sql', 'fletcherfiltering', 'vivado']
-    CMAKE_GENERATOR = 'Ninja'
-    VIVADO_DIR = Path('/opt/Xilinx/Vivado/2019.1')
-    VIVADO_BIN_DIR = VIVADO_DIR / 'bin'
-    VIVADO_HLS_EXEC = VIVADO_BIN_DIR / 'vivado_hls.bat'
-    HLS_INCLUDE_PATH = [VIVADO_DIR / 'include']
-    HLS_LINK_PATH = [VIVADO_DIR / Path('linux64/tools/fpo_v7_0')]
-    HLS_LIBS = 'gmp', 'mpfr', 'Ip_floating_point_v7_0_bitacc_cmodel'

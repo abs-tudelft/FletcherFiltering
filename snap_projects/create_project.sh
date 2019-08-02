@@ -1,32 +1,33 @@
 #!/bin/bash
-ROOT_DIR=$(dirname $(readlink -f "$BASH_SOURCE"))
 
 set -e
 
-## project, target
-run_target()
-{
+## project
+create(){
     ACTION_ROOT=`pwd`/$1
-    sed -i "s;export ACTION_ROOT=.*;export ACTION_ROOT=${ACTION_ROOT};" $SNAP_ROOT/snap_env.sh
-    make -C $SNAP_ROOT $2
+    BASE_PATH=`pwd`/_base
+
+    mkdir -p $ACTION_ROOT/hw
+    mkdir -p $ACTION_ROOT/sw
+
+    cp $BASE_PATH/action_*.vhd $ACTION_ROOT/hw
+    cp $BASE_PATH/Kernel.vhd $ACTION_ROOT/hw/Fletcher$1.vhd
+    cp $BASE_PATH/sw.Makefile $ACTION_ROOT/sw/Makefile
+    cp $BASE_PATH/hw.Makefile $ACTION_ROOT/hw/Makefile
+    cp $BASE_PATH/Makefile $ACTION_ROOT/Makefile./
 }
 
 usage()
 {
-    echo "usage: $(basename $BASH_SOURCE) -p Project [-t Target] | [-h]]"
+    echo "usage: $(basename $BASH_SOURCE) -p project | [-h]]"
 }
 
-
-target=sim
-project=Simple
+project=New
 
 while [ "$1" != "" ]; do
     case $1 in
         -p | --project )        shift
                                 project=$1
-                                ;;
-        -t | --target )         shift
-                                target=$1
                                 ;;
         -h | --help )           usage
                                 exit
@@ -39,7 +40,4 @@ done
 
 # Test code to verify command line processing
 echo "Project: $project"
-echo "Target: $target"
-echo "SNAP Root: $SNAP_ROOT"
-
-run_target $project $target
+create $project

@@ -16,6 +16,8 @@
 
 import pyarrow as pa
 
+import os
+
 from pathlib import Path
 
 from version_query import predict_version_str
@@ -50,6 +52,11 @@ STRING_BASE_TYPE = 'f_uint8' #in code
 STRING_BASE_TYPE_TEST = 'char' #in test bench
 LENGTH_TYPE = pa.int32()
 VALID_TYPE = pa.bool_()
-PART_NAME = 'xcu200-fsgd2104-2-e' # 'xa7a12tcsg325-1q' 40/40/16k/8k or alveo: xcu200-fsgd2104-2-e or zynq 700: xc7z020clg400-1
-FLETCHER_DIR = Path('Z:/Documents/GitHub/fletcher')
+PART_NAME = 'xcku060-ffva1156-2-e' # 'xa7a12tcsg325-1q' 40/40/16k/8k or alveo: xcu200-fsgd2104-2-e or zynq 700: xc7z020clg400-1 or nimbix: xcku060-ffva1156-2-e
+
+if os.environ['FLETCHER_DIR']:
+    FLETCHER_DIR = Path(os.environ['FLETCHER_DIR'])
+else:
+    FLETCHER_DIR = Path('Z:/Documents/GitHub/fletcher')
+
 FLETCHER_HLS_DIR = Path('integrations/vivado_hls/src')

@@ -385,7 +385,7 @@ class BaseQuery:
             vivado_printer = lambda val: None
 
         result, sim_result = VivadoHLSProcessRunner(vivado_printer,
-                                                    [str(test_settings.VIVADO_BIN_DIR / 'vivado_hls.bat'), '-f',
+                                                    [str(test_settings.VIVADO_HLS_EXEC), '-f',
                                                      'run_complete_hls.tcl'],
                                                     shell=False, cwd=self.working_dir,
                                                     env={**os.environ, **vivado_env})
