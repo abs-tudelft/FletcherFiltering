@@ -23,6 +23,9 @@ class UIntGenerator:
         pass
 
     def generate(self, size: int = 32):
+        # Because numpy datetime64 is signed.
+        if size == 64:
+            size = 63
         return self.random.randint(0, 2 ** size - 1)
 
 
