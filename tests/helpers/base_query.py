@@ -41,6 +41,7 @@ from . import python_class_generator
 from .process_runner import ProcessRunner, VivadoHLSProcessRunner
 
 import pyarrow as pa
+import numpy as np
 import shutil
 import os
 import ctypes
@@ -98,6 +99,7 @@ class BaseQuery:
                 self.printer("Using workspace directory '{}'".format(self.working_dir))
 
         if not self.has_data_file:
+            self.printer("Generating random data...".format(self.working_dir))
             self.generate_random_data()
 
         if 'sql' in test_settings.TEST_PARTS:
@@ -185,6 +187,96 @@ class BaseQuery:
         self.cnx.commit()
 
         return True
+
+    def save_data(self):
+        self.printer("Saving {} data records to header and record batch...".format(len(self.data)))
+        data_placeholder = []
+
+        for data_item in self.data:
+            data_item_lst = []
+            for col in self.in_schema:
+                if col.type == pa.string():
+                    data_item_text = "\"{}\"".format(data_item[col.name])
+                elif col.type == pa.bool_():
+                    data_item_text = "{}".format('true' if data_item[col.name] else 'false')
+                elif col.type == pa.float32():
+                    data_item_text = "{}f".format(data_item[col.name])
+                elif col.type == pa.uint8() or col.type == pa.uint16() or col.type == pa.uint32():
+                    data_item_text = "{}u".format(data_item[col.name])
+                elif col.type == pa.int64():
+                    data_item_text = "{}ll".format(data_item[col.name])
+                elif col.type == pa.uint64():
+                    data_item_text = "{}ull".format(data_item[col.name])
+                elif pa.types.is_timestamp(col.type):
+                    data_item_text = "{}ull".format(data_item[col.name])
+                else:
+                    data_item_text = "{}".format(data_item[col.name])
+                if col.nullable:
+                    if data_item[col.name] is not None:
+                        data_item_lst.append("{{ .data = {0}, .valid = true}}".format(data_item_text))
+                    else:
+                        if col.type == pa.string():
+                            default_value = "\"\""
+                        else:
+                            default_value = "0"
+                        data_item_lst.append("{{ .data = {0}, .valid = false}}".format(default_value))
+                else:
+                    data_item_lst.append("{0}".format(data_item_text))
+
+            data_placeholder.append(", ".join(data_item_lst))
+
+        template_data = {
+            'data_N_placeholder': len(self.data),
+            'data_placeholder': ",\n\t".join(data_placeholder),
+        }
+
+        with open(self.working_dir / Path('{0}{1}.h'.format(self.name, settings.DATA_SUFFIX)), 'r+') as data_file:
+            data_cpp = string.Template(data_file.read())
+            data_file.seek(0)
+            data_file.write(data_cpp.safe_substitute(template_data))
+            data_file.truncate()
+
+        rb_data = []
+        for col in self.in_schema:
+            type_func = (lambda x: x)
+            
+            if col.type == pa.float16():
+                type_func = np.float16
+            elif col.type == pa.float32():
+                type_func = np.float32
+            elif col.type == pa.float64():
+                type_func = np.float64
+            elif col.type == pa.int8():
+                type_func = np.int8
+            elif col.type == pa.uint8():
+                type_func = np.uint8
+            elif col.type == pa.int16():
+                type_func = np.int16
+            elif col.type == pa.uint16():
+                type_func = np.uint16
+            elif col.type == pa.int32():
+                type_func = np.int32
+            elif col.type == pa.uint32():
+                type_func = np.uint32
+            elif col.type == pa.int64():
+                type_func = np.int64
+            elif col.type == pa.uint64():
+                type_func = np.uint64
+            elif pa.types.is_timestamp(col.type):
+                type_func = (lambda x: np.datetime64(x, col.type.unit))
+                
+            rb_data.append(pa.array([(type_func(d[col.name]) if d[col.name] is not None else None) for d in self.data], col.type))
+
+        # Create a RecordBatch from the Arrays.
+        recordbatch = pa.RecordBatch.from_arrays(rb_data, self.in_schema)
+
+        # Create an Arrow RecordBatchFileWriter.
+        writer = pa.RecordBatchFileWriter(self.working_dir / Path('{0}{1}.rb'.format(self.name, settings.DATA_SUFFIX)),
+                                      self.in_schema)
+        # Write the RecordBatch.
+        writer.write(recordbatch)
+
+        writer.close()
 
     def compile(self):
         self.printer("Compiling SQL to HLS C++...")
@@ -286,50 +378,6 @@ class BaseQuery:
         vivado_env = {
             'PATH': str(test_settings.VIVADO_BIN_DIR)
         }
-        data_placeholder = []
-        for data_item in self.data:
-            data_item_lst = []
-            for col in self.in_schema:
-                if col.type == pa.string():
-                    data_item_text = "\"{}\"".format(data_item[col.name])
-                elif col.type == pa.bool_():
-                    data_item_text = "{}".format('true' if data_item[col.name] else 'false')
-                elif col.type == pa.float32():
-                    data_item_text = "{}f".format(data_item[col.name])
-                elif col.type == pa.uint8() or col.type == pa.uint16() or col.type == pa.uint32():
-                    data_item_text = "{}u".format(data_item[col.name])
-                elif col.type == pa.int64():
-                    data_item_text = "{}ll".format(data_item[col.name])
-                elif col.type == pa.uint64():
-                    data_item_text = "{}ull".format(data_item[col.name])
-                elif pa.types.is_timestamp(col.type):
-                    data_item_text = "{}ull".format(data_item[col.name])
-                else:
-                    data_item_text = "{}".format(data_item[col.name])
-                if col.nullable:
-                    if data_item[col.name] is not None:
-                        data_item_lst.append("{{ .data = {0}, .valid = true}}".format(data_item_text))
-                    else:
-                        if col.type == pa.string():
-                            default_value = "\"\""
-                        else:
-                            default_value = "0"
-                        data_item_lst.append("{{ .data = {0}, .valid = false}}".format(default_value))
-                else:
-                    data_item_lst.append("{0}".format(data_item_text))
-
-            data_placeholder.append(", ".join(data_item_lst))
-
-        template_data = {
-            'data_N_placeholder': len(self.data),
-            'data_placeholder': ",\n\t".join(data_placeholder),
-        }
-
-        with open(self.working_dir / Path('{0}{1}.h'.format(self.name, settings.DATA_SUFFIX)), 'r+') as data_file:
-            data_cpp = string.Template(data_file.read())
-            data_file.seek(0)
-            data_file.write(data_cpp.safe_substitute(template_data))
-            data_file.truncate()
 
         if not self.swallow_build_output:
             vivado_printer = self.printer
@@ -365,6 +413,8 @@ class BaseQuery:
 
     def run(self):
         self.compile()
+
+        self.save_data()
 
         if 'sql' in test_settings.TEST_PARTS:
             self.printer("Executing query on MySQL...")
