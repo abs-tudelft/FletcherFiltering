@@ -498,6 +498,5 @@ cmake-build-*/
 *.fbs
 **/fletcherfiltering_test_workspace/**
 **/mysql-data/**
-vivado-projects/**
-snap_fletcher/**
-hdl_helloworld/**
+snap_projects/Simple/*
+snap_projects/Float/*
