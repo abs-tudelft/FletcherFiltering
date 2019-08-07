@@ -155,7 +155,7 @@ class BaseQuery:
                     elif col.type == pa.uint64():
                         record[col.name] = uint_gen.generate(64)
                     elif pa.types.is_timestamp(col.type):
-                        record[col.name] = uint_gen.generate(64)
+                        record[col.name] = uint_gen.generate(64, True)
                     elif col.type == pa.float16():
                         record[col.name] = float_gen.generate(16)
                     elif col.type == pa.float32():
