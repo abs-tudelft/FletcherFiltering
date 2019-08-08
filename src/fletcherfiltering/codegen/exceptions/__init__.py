@@ -18,6 +18,17 @@ class CodegenError(Exception):
     """Base class for other exceptions"""
     pass
 
+class MetaLengthColumnError(CodegenError):
+    """Raised when the given meta length count column does not exist in the input schema."""
+    pass
+
+class FletchgenError(CodegenError):
+    """Raised when the fletchgen process exits with a non-zero value."""
+    pass
+
+class VivadoHLSError(CodegenError):
+    """Raised when the Vivado HLS process exits with a non-zero value, or is not supported on the current platform."""
+    pass
 
 class SchemaFileNotReadable(CodegenError):
     """Raised when schema file is not readable."""
@@ -35,6 +46,9 @@ class OutSchemaColumnCodegenError(CodegenError):
     """Raised when the out schema does not have the same number of columns as the query."""
     pass
 
+class MetaLengthColumnError(CodegenError):
+    """Raised when the out schema does not have the same number of columns as the query."""
+    pass
 
 class UnsupportedArgumentTypeError(CodegenError):
     """Raised when there is an unsupported type in a function parameter."""

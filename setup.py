@@ -66,6 +66,7 @@ setup(
         'horast',
         'astunparse',
         'typed-astunparse',
+        'jinja2',
         'transpyle[cpp] @ git+https://github.com/EraYaN/transpyle@cpp-unparsing-extensions',
     ],
     setup_requires=[

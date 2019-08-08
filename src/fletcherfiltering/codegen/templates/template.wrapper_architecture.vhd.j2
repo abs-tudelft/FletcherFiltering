@@ -1,0 +1,426 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+--
+-- Copyright (c) 2019 Erwin de Haan. All rights reserved.
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+--     http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+--  limitations under the License.
+--
+--  This file is part of the FletcherFiltering project
+--
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+architecture Implementation of Fletcher{{ query_name }} is
+  -----------------------------------------------------------------------------
+  -- MMIO
+  -----------------------------------------------------------------------------
+  -- Default Fletcher registers:
+  constant REG_CONTROL                            : natural :=  0;
+  constant REG_STATUS                             : natural :=  1;
+  constant REG_RETURN0                            : natural :=  2;
+  constant REG_RETURN1                            : natural :=  3;
+
+  {% set global = namespace(reg_number=4) %}
+  -- RecordBatch ranges:
+  {% for item in in_signals %}
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX : natural :=  {{ global.reg_number }};
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX : natural :=  {{ global.reg_number + 1 }};
+  {%- set global.reg_number = global.reg_number + 2 -%}
+  {% endfor -%}
+
+  {%- for item in out_signals %}
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX : natural :=  {{ global.reg_number }};
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX : natural :=  {{ global.reg_number + 1 }};
+  {%- set global.reg_number = global.reg_number + 2 -%}
+  {% endfor %}
+
+  -- Buffer addresses:
+  {% for item in in_signals %}
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_LO : natural :=  {{ global.reg_number }};
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_HI : natural :=  {{ global.reg_number + 1 }};
+  {%- set global.reg_number = global.reg_number + 2 -%}
+  {% endfor -%}
+
+  {%- for item in out_signals %}
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_LO : natural :=  {{ global.reg_number }};
+  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_HI : natural :=  {{ global.reg_number + 1 }};
+  {%- set global.reg_number = global.reg_number + 2 -%}
+  {% endfor %}
+
+  -- Array of MMIO registers:
+  constant NUM_REGS                               : natural := {{ global.reg_number }};
+  constant REG_WIDTH                              : natural := 32;
+
+  type reg_array_t is array(natural range <>) of std_logic_vector(REG_WIDTH-1 downto 0);
+
+  signal rreg_concat            : std_logic_vector(NUM_REGS*REG_WIDTH-1 downto 0);
+  signal rreg_array             : reg_array_t(0 to NUM_REGS-1);
+  signal rreg_en                : std_logic_vector(NUM_REGS-1 downto 0);
+
+  signal wreg_array             : reg_array_t(0 to NUM_REGS-1);
+  signal wreg_concat            : std_logic_vector(NUM_REGS*REG_WIDTH-1 downto 0);
+
+  -----------------------------------------------------------------------------
+  -- Control signals
+  -----------------------------------------------------------------------------
+  signal stat_done              : std_logic;
+  signal stat_busy              : std_logic;
+  signal stat_idle              : std_logic;
+  signal ctrl_reset             : std_logic;
+  signal ctrl_stop              : std_logic;
+  signal ctrl_start             : std_logic;
+  signal kcd_reset_n            : std_logic;
+
+  -- Global control state machine
+  -- type state_type is (IDLE, START, BUSY, INTERFACE, UNLOCK);
+  type state_type is (RESET, WAITING, SETUP, RUNNING, DONE);
+
+  signal state, state_next : state_type;
+
+  -- Count the records
+  signal pass_counter, pass_counter_next : unsigned(REG_WIDTH-1 downto 0);
+  signal total_counter, total_counter_next : unsigned(REG_WIDTH-1 downto 0);
+
+  -- Kernel singals
+  signal ap_start, ap_done, ap_idle, ap_ready : STD_LOGIC;
+  signal meta_length_V : STD_LOGIC_VECTOR(31 downto 0);
+
+  {% for item in in_signals %}
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V : STD_LOGIC_VECTOR ({{ item.total_size - 1 }} downto 0);
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data : STD_LOGIC_VECTOR ({{ item.data_size - 1 }} downto 0);
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid : STD_LOGIC;
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last : STD_LOGIC;
+  {% endfor %}
+  {% for item in in_signals %}
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_read : STD_LOGIC;
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_empty_n : STD_LOGIC;
+  {% endfor %}
+  {% for item in out_signals %}
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V : STD_LOGIC_VECTOR ({{ item.total_size - 1 }} downto 0);
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data : STD_LOGIC_VECTOR ({{ item.data_size - 1 }} downto 0);
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid : STD_LOGIC;
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last : STD_LOGIC;
+  {% endfor %}
+  {% for item in out_signals %}
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_write : STD_LOGIC;
+  signal {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_full_n : STD_LOGIC;
+  {% endfor %}
+  signal ap_return : STD_LOGIC_VECTOR (0 downto 0);
+
+begin
+
+  -----------------------------------------------------------------------------
+  -- MMIO
+  -----------------------------------------------------------------------------
+  kcd_reset_n <= not(kcd_reset);
+
+  -- Instantiate the AXI mmio component to communicate with host more easily
+  -- through registers.
+  axi_mmio_inst : entity work.AxiMmio
+    generic map (
+      BUS_ADDR_WIDTH     => 32,
+      BUS_DATA_WIDTH     => REG_WIDTH,
+      NUM_REGS           => NUM_REGS,
+      REG_CONFIG         => "WRRR{{ 'W' * (global.reg_number - 4) }}R",
+      SLV_R_SLICE_DEPTH  => 0,
+      SLV_W_SLICE_DEPTH  => 0
+    )
+    port map (
+      clk                => kcd_clk,
+      reset_n            => kcd_reset_n,
+      s_axi_awvalid      => mmio_awvalid,
+      s_axi_awready      => mmio_awready,
+      s_axi_awaddr       => mmio_awaddr,
+      s_axi_wvalid       => mmio_wvalid,
+      s_axi_wready       => mmio_wready,
+      s_axi_wdata        => mmio_wdata,
+      s_axi_wstrb        => mmio_wstrb,
+      s_axi_bvalid       => mmio_bvalid,
+      s_axi_bready       => mmio_bready,
+      s_axi_bresp        => mmio_bresp,
+      s_axi_arvalid      => mmio_arvalid,
+      s_axi_arready      => mmio_arready,
+      s_axi_araddr       => mmio_araddr,
+      s_axi_rvalid       => mmio_rvalid,
+      s_axi_rready       => mmio_rready,
+      s_axi_rdata        => mmio_rdata,
+      s_axi_rresp        => mmio_rresp,
+      regs_out           => wreg_concat,
+      regs_in            => rreg_concat,
+      regs_in_en         => rreg_en
+    );
+
+  -- Turn signals into something more readable
+  write_regs_unconcat: for I in 0 to NUM_REGS-1 generate
+    wreg_array(I) <= wreg_concat((I+1)*REG_WIDTH-1 downto I*REG_WIDTH);
+  end generate;
+  read_regs_concat: for I in 0 to NUM_REGS-1 generate
+    rreg_concat((I+1)*REG_WIDTH-1 downto I*REG_WIDTH) <= rreg_array(I);
+  end generate;
+
+  -- Always enable read registers
+  rreg_array(REG_STATUS) <= (0 => stat_idle, 1 => stat_busy, 2 => stat_done, others => '0');
+  rreg_en <= (REG_STATUS => '1', REG_RETURN0 => '1', REG_RETURN1 => '1', others => '0');
+
+  -- Put the counters in the return registers
+  rreg_array(REG_RETURN0) <= std_logic_vector(pass_counter);
+  rreg_array(REG_RETURN1) <= std_logic_vector(total_counter);
+
+  -- Connect the control bits
+  ctrl_start <= wreg_array(REG_CONTROL)(0);
+  ctrl_stop  <= wreg_array(REG_CONTROL)(1);
+  ctrl_reset <= wreg_array(REG_CONTROL)(2);
+
+  -----------------------------------------------------------------------------
+  -- Kernel
+  -----------------------------------------------------------------------------
+
+  hls_kernel_inst: entity work.{{ query_name }}
+      port map (
+          ap_clk => kcd_clk,
+          ap_rst => kcd_reset,
+          ap_start => ap_start,
+          ap_done => ap_done,
+          ap_idle => ap_idle,
+          ap_ready => ap_ready,
+          meta_length_V => meta_length_V,
+          {% for item in in_signals %}
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dout => {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V,
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_empty_n => {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_empty_n,
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_read => {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_read,
+          {% endfor %}
+          {% for item in out_signals %}
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_din => {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V,
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_full_n => {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_full_n,
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_write => {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_write,
+          {% endfor %}
+          ap_return => ap_return
+    );
+
+  -- Unpack the data buses
+  {% for item in in_signals %}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V(0) <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V(1) <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V({{ item.total_size - 1 }} downto 2) <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data;
+  {% endfor %}
+
+  {% for item in out_signals %}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V(0);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V(1);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V({{ item.total_size - 1 }} downto 2);
+  {% endfor %}
+  -- hook up rest of the kernel signals
+  -- ap_ready, ap_done, ap_start are already hooked up in the state machine
+  meta_length_V <= std_logic_vector(unsigned(wreg_array(REG_{{ settings.INPUT_NAME|upper }}_{{ primary_key|upper }}_LASTIDX))-unsigned(wreg_array(REG_{{ settings.INPUT_NAME|upper }}_{{ primary_key|upper }}_FIRSTIDX)));
+
+  {% for item in in_signals %}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }};
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_dvalid;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_last;
+  {% endfor %}
+
+  -- in handshake signals
+  {% for item in in_signals %}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_empty_n <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_valid;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_ready <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_read;
+  {% endfor %}
+
+  {% for item in out_signals %}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }} <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_dvalid <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_last <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last;
+  {% endfor %}
+
+  -- out handshake signals
+  {% for item in out_signals %}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_valid <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_write;
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_full_n <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_ready;
+  {% endfor %}
+
+  -----------------------------------------------------------------------------
+  -- Kernel state machine
+  -----------------------------------------------------------------------------
+
+  -- Provide base addresses to ArrayReaders
+  {% for item in in_signals -%}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ctrl <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_HI)
+                    & wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_LO);
+  {% endfor %}
+  -- Provide base address to ArrayWriter
+  {% for item in out_signals -%}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ctrl <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_HI)
+                    & wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_BUF_LO);
+  {% endfor %}
+
+  -- Set the first and last index on our array
+  {% for item in in_signals -%}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_firstIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_lastIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX);
+  {% endfor %}
+  {% for item in out_signals -%}
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_firstIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_lastIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX);
+  {% endfor %}
+
+  logic_p: process (
+    -- State
+    state,
+    -- Control signals
+    ctrl_start, ctrl_stop, ctrl_reset,
+    -- HLS Control signals
+    ap_done, ap_ready, ap_idle, ap_return,
+    -- Command streams
+    {% for item in in_signals -%}
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready,
+    {% endfor %}
+    {% for item in out_signals -%}
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready,
+    {% endfor %}
+    -- Data streams
+    {% for item in in_signals -%}
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_valid, {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_read, {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_last, {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_dvalid,
+    {% endfor %}
+    {% for item in out_signals -%}
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_write, {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_ready, {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last, {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_dvalid,
+    {% endfor %}
+    -- Unlock streams
+    {% for item in in_signals -%}
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_unl_valid,
+    {% endfor %}
+    {% for item in out_signals -%}
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_unl_valid,
+    {% endfor %}
+    -- Internal
+    pass_counter,
+    total_counter
+  ) is
+  begin
+
+    -- Default values:
+    {% for item in in_signals -%}
+    -- No command to "{{ item.stream_name|lower }}" ArrayReader
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '0';
+    -- Do not accept values from the "{{ item.stream_name|lower }}" ArrayReader
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_unl_ready <= '0';
+    {% endfor %}
+    {% for item in out_signals -%}
+    -- No command to "{{ item.stream_name|lower }}" ArrayWriter
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '0';
+    -- Do not accept values from the "{{ item.stream_name|lower }}" ArrayWriter
+    {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_unl_ready <= '0';
+    {% endfor %}
+    -- Retain counter values
+    pass_counter_next <= pass_counter;
+    total_counter_next <= total_counter;
+    -- Stay in same state
+    state_next <= state;
+    -- Stoop the HLS kernel
+    ap_start <= '0';
+
+    -- States:
+    case state is
+      when RESET =>
+        stat_done <= '0';
+        stat_busy <= '0';
+        stat_idle <= '0';
+        state_next <= WAITING;
+        -- Start sum at 0
+        pass_counter_next <= (others => '0');
+        total_counter_next <= (others => '0');
+
+      when WAITING =>
+        stat_done <= '0';
+        stat_busy <= '0';
+        stat_idle <= '1';
+        -- Wait for start signal from UserCore (initiated by software)
+        if ctrl_start = '1' then
+          state_next <= SETUP;
+        end if;
+
+      when SETUP =>
+        stat_done <= '0';
+        stat_busy <= '1';
+        stat_idle <= '0';
+        ap_start <= '1';
+
+        -- Send addresses and row indices to the ArrayReaders
+        {% for item in in_signals -%}
+        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '1';
+        {% endfor %}
+        -- Send addresses and row indices to the ArrayWriters
+        {% for item in out_signals -%}
+        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '1';
+        {% endfor %}
+
+        if {% for item in in_signals -%}
+        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready = '1' {% if not loop.last %}and {% endif %}
+        {%- endfor %}
+        and
+        {% for item in out_signals -%}
+        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready = '1' {% if not loop.last %}and {% endif %}
+        {%- endfor -%}
+         then
+          -- ArrayReader and ArrayWriter have received the commands
+          state_next <= RUNNING;
+        end if;
+
+      when RUNNING =>
+        stat_done <= '0';
+        stat_busy <= '1';
+        stat_idle <= '0';
+        ap_start <= '1';
+
+        if ap_done = '1' then
+          -- Count the record
+          total_counter_next <= total_counter + 1;
+          if ap_return(0) = '1' then
+              pass_counter_next <= pass_counter + 1;
+          end if;
+
+          -- Wait for last element from Kernel
+          if {% for item in out_signals -%}
+            {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_last = '1' {% if not loop.last %}and {% endif %}
+            {%- endfor -%} then
+            state_next <= DONE;
+          end if;
+        end if;
+
+      when DONE =>
+        stat_done <= '1';
+        stat_busy <= '0';
+        stat_idle <= '1';
+
+      when others =>
+        stat_done <= '0';
+        stat_busy <= '0';
+        stat_idle <= '0';
+    end case;
+  end process;
+
+
+  state_p: process (kcd_clk)
+  begin
+    -- Control state machine
+    if rising_edge(kcd_clk) then
+      if kcd_reset = '1' or ctrl_reset = '1' then
+        state <= RESET;
+        pass_counter <= (others => '0');
+        total_counter <= (others => '0');
+      else
+        state <= state_next;
+        pass_counter <= pass_counter_next;
+        total_counter <= total_counter_next;
+      end if;
+    end if;
+  end process;
+end architecture;

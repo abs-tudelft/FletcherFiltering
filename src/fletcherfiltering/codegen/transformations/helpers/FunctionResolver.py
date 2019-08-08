@@ -21,7 +21,7 @@ import copy
 import typed_ast.ast3 as ast
 
 from . import grouped, make_comment
-from ... import settings
+from fletcherfiltering import settings
 
 FunctionMetadata = namedtuple('FunctionMetadata', ['resolved_name', 'generator', 'id', 'manual_signal_passthrough'])
 

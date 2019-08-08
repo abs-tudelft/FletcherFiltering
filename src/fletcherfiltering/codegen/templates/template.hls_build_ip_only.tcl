@@ -29,9 +29,7 @@ add_files -tb ${query_name}${testbench_suffix}.cpp -cflags "-std=c++11 ${hls_inc
 open_solution "automated_tests"
 set_part {${part_name}}
 create_clock -period 10 -name default
-config_export -format ip_catalog -rtl vhdl
-csim_design -O
+#config_export -format ip_catalog -rtl vhdl
 csynth_design
-cosim_design -O -trace_level all -rtl vhdl
 export_design -rtl vhdl -format ip_catalog
 exit

@@ -21,7 +21,8 @@ from typing import Union, Tuple
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
-from .. import debug, settings
+from fletcherfiltering import settings
+from fletcherfiltering.common import debug
 from .helpers import make_comment, ReferenceMetadata
 from .helpers.ArrowTestTypeResolver import ArrowTestTypeResolver
 from .helpers.ArrowTypeResolver import ArrowTypeResolver

@@ -13,4 +13,13 @@
 #  limitations under the License.
 #
 #  This file is part of the FletcherFiltering project
+import sys
 
+from fletcherfiltering import settings
+
+
+def debug(*args):
+    if settings.DEBUG:
+        print("[DEBUG] {}: ".format(sys._getframe(1).f_code.co_name) + " ".join(map(str, args)))
+    else:
+        pass

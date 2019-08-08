@@ -13,7 +13,7 @@ run_fetchgen(){
     ACTION_ROOT=`pwd`/$1
     COMPILE_PATH=`realpath $2`
     pushd $ACTION_ROOT/hw
-    fletchgen -i $COMPILE_PATH/ff_in.fbs $COMPILE_PATH/ff_out.fbs -l vhdl --axi --sim -r $COMPILE_PATH/$1_data.rb -s $COMPILE_PATH/$1_data.srec -f -n Fletcher$1
+    fletchgen -i $COMPILE_PATH/ff_in.fbs -i $COMPILE_PATH/ff_out.fbs -l vhdl -r $COMPILE_PATH/$1_data.rb -s $COMPILE_PATH/$1_data.srec -f -n Fletcher$1 --axi --sim
     popd
 }
 

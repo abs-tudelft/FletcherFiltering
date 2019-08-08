@@ -20,7 +20,8 @@ from typing import Union, Tuple, Callable
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
-from .. import debug, settings
+from fletcherfiltering import settings
+from fletcherfiltering.common import debug
 from .helpers import ReferenceMetadata
 from .helpers import make_comment
 from .helpers.ArrowTypeResolver import ArrowTypeResolver

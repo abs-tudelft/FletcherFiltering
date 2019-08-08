@@ -17,7 +17,7 @@
 import pyarrow as pa
 from pathlib import Path, PurePath
 import typing
-from .struct_type_mapper import StructTypeMapper
+from fletcherfiltering.common.helpers.struct_type_mapper import StructTypeMapper
 import re
 import struct
 from fletcherfiltering import settings

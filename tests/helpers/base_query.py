@@ -17,28 +17,19 @@
 import mysql.connector
 import mysql.connector.errorcode as errorcode
 from fletcherfiltering.codegen.compiler import Compiler
+from fletcherfiltering.common.data_generation import generate_random_data
 
 from .xsim_output_reader import XSIMOutputReader
 
-from fletcherfiltering.codegen.transformations.helpers import grouped
-
 from fletcherfiltering import settings
 
-from pathlib import Path, PurePath
-
-from ..data_generation.SentenceGenerator import SentenceGenerator
-from ..data_generation.UIntGenerator import UIntGenerator
-from ..data_generation.IntGenerator import IntGenerator
-from ..data_generation.FloatGenerator import FloatGenerator
+from pathlib import Path
 
 from .mysql_type_mapper import MySQLTypeMapper
-from .ctypes_type_mapper import CTypesTypeMapper
-
-from .. import test_settings
 
 from . import python_class_generator
 
-from .process_runner import ProcessRunner, VivadoHLSProcessRunner
+from fletcherfiltering.common.helpers.process_runner import ProcessRunner, VivadoHLSProcessRunner
 
 import pyarrow as pa
 import numpy as np
@@ -47,12 +38,11 @@ import os
 import ctypes
 import copy
 import pytest
-import sys
 import platform
 import struct
 import string
 import math
-import random
+
 
 class BaseQuery:
     def __init__(self, printer, cnx, working_dir_base: Path, name='query', has_data_file=False, separate_work_dir=False,
@@ -72,21 +62,21 @@ class BaseQuery:
         self.in_schema_pk = None
         self.query = None
         self.clean_workdir = clean_workdir
-        self.swallow_build_output = test_settings.SWALLOW_OUTPUT
+        self.swallow_build_output = settings.SWALLOW_OUTPUT
         if separate_work_dir:
-            self.working_dir = working_dir_base / test_settings.WORKSPACE_NAME / self.name
+            self.working_dir = working_dir_base / settings.WORKSPACE_NAME / self.name
         else:
-            self.working_dir = working_dir_base / test_settings.WORKSPACE_NAME
+            self.working_dir = working_dir_base / settings.WORKSPACE_NAME
 
     def setup(self):
-        if 'sql' in test_settings.TEST_PARTS:
+        if 'sql' in settings.TEST_PARTS:
             if not self.create_table():
                 if not self.drop_table():
                     pytest.fail("Could not drop table successfully.")
                 if not self.create_table():
                     pytest.fail("Could not create table successfully on second try.")
 
-        #if 'fletcherfiltering' in test_settings.TEST_PARTS or 'vivado' in test_settings.TEST_PARTS:
+        #if 'fletcherfiltering' in settings.TEST_PARTS or 'vivado' in settings.TEST_PARTS:
         if not self.working_dir.exists():
             self.printer("Creating workspace directory '{}'".format(self.working_dir))
             self.working_dir.mkdir(parents=True, exist_ok=True)
@@ -100,9 +90,9 @@ class BaseQuery:
 
         if not self.has_data_file:
             self.printer("Generating random data...".format(self.working_dir))
-            self.generate_random_data()
+            self.data = generate_random_data(self.in_schema, self.in_schema_pk)
 
-        if 'sql' in test_settings.TEST_PARTS:
+        if 'sql' in settings.TEST_PARTS:
             self.insert_data()
 
         return True
@@ -118,56 +108,6 @@ class BaseQuery:
             return False
 
         return True
-
-    def generate_random_data(self):
-        str_gen = SentenceGenerator()
-        uint_gen = UIntGenerator()
-        int_gen = IntGenerator()
-        float_gen = FloatGenerator()
-        self.data.clear()
-        for i in range(test_settings.DEFAULT_DATA_SIZE):
-            record = {}
-            for col in self.in_schema:
-                if col.name == self.in_schema_pk:
-                    if col.type == pa.string():
-                        record[col.name] = str(i)
-                    elif col.type == pa.int32() or col.type == pa.uint32() or col.type == pa.int64() or col.type == pa.uint64():
-                        record[col.name] = i
-                    else:
-                        pytest.fail("Unsupported PK column type {} for {}".format(col.type, col.name))
-                else:
-                    if col.type == pa.string():
-                        record[col.name] = str_gen.generate(maxlength=int(settings.VAR_LENGTH / 2))
-                    elif col.type == pa.int8():
-                        record[col.name] = int_gen.generate(8)
-                    elif col.type == pa.uint8():
-                        record[col.name] = uint_gen.generate(8)
-                    elif col.type == pa.int16():
-                        record[col.name] = int_gen.generate(16)
-                    elif col.type == pa.uint16():
-                        record[col.name] = uint_gen.generate(16)
-                    elif col.type == pa.int32():
-                        record[col.name] = int_gen.generate(32)
-                    elif col.type == pa.uint32():
-                        record[col.name] = uint_gen.generate(32)
-                    elif col.type == pa.int64():
-                        record[col.name] = int_gen.generate(64)
-                    elif col.type == pa.uint64():
-                        record[col.name] = uint_gen.generate(64)
-                    elif pa.types.is_timestamp(col.type):
-                        record[col.name] = uint_gen.generate(64)
-                    elif col.type == pa.float16():
-                        record[col.name] = float_gen.generate(16)
-                    elif col.type == pa.float32():
-                        record[col.name] = float_gen.generate(32)
-                    elif col.type == pa.float64():
-                        record[col.name] = float_gen.generate(64)
-                    else:
-                        pytest.fail("Unsupported column type {} for {}".format(col.type, col.name))
-                    if col.nullable:
-                        if random.random()<test_settings.NULLPROBABILITY:
-                            record[col.name] = None
-            self.data.append(record)
 
     def insert_data(self):
         if len(self.data) == 0:
@@ -283,8 +223,9 @@ class BaseQuery:
         compiler = Compiler(self.in_schema, self.out_schema)
 
         compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
-                 extra_include_dirs=test_settings.HLS_INCLUDE_PATH, hls_include_dirs=[settings.FLETCHER_DIR / settings.FLETCHER_HLS_DIR], extra_link_dirs=test_settings.HLS_LINK_PATH,
-                 extra_link_libraries=test_settings.HLS_LIBS)
+                 extra_include_dirs=settings.HLS_INCLUDE_PATH, hls_include_dirs=[settings.FLETCHER_DIR / settings.FLETCHER_HLS_DIR], extra_link_dirs=settings.HLS_LINK_PATH,
+                 extra_link_libraries=settings.HLS_LIBS,
+                 run_vivado_hls=platform.system() != 'Darwin', run_fletchgen_in_docker=platform.system() != 'Linux')
 
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
@@ -302,13 +243,13 @@ class BaseQuery:
             cmake_printer = lambda val: None
 
         self.printer("Running CMake Generate...")
-        result = ProcessRunner(cmake_printer, ['cmake', '-G', test_settings.CMAKE_GENERATOR,
-                                               '-DCMAKE_BUILD_TYPE={}'.format(test_settings.BUILD_CONFIG), '.'],
+        result = ProcessRunner(cmake_printer, ['cmake', '-G', settings.CMAKE_GENERATOR,
+                                               '-DCMAKE_BUILD_TYPE={}'.format(settings.BUILD_CONFIG), '.'],
                                shell=False, cwd=self.working_dir)
         if result != 0:
             pytest.fail("CMake Generate exited with code {}".format(result))
         self.printer("Running CMake Build...")
-        result = ProcessRunner(cmake_printer, ['cmake', '--build', '.', '--config', test_settings.BUILD_CONFIG],
+        result = ProcessRunner(cmake_printer, ['cmake', '--build', '.', '--config', settings.BUILD_CONFIG],
                                shell=False, cwd=self.working_dir)
         if result != 0:
             pytest.fail("CMake Build exited with code {}".format(result))
@@ -320,7 +261,7 @@ class BaseQuery:
         if platform.system() == 'Darwin':
             lib = ctypes.CDLL(str(self.working_dir / 'libcodegen-{}.dylib'.format(self.name)))
         elif platform.system() == 'Windows':
-            lib = ctypes.WinDLL(str(self.working_dir / test_settings.BUILD_CONFIG / 'codegen-{}.dll'.format(self.name)))
+            lib = ctypes.WinDLL(str(self.working_dir / settings.BUILD_CONFIG / 'codegen-{}.dll'.format(self.name)))
         else:
             lib = ctypes.CDLL(str(self.working_dir / 'libcodegen-{}.so'.format(self.name)))
         fletcherfiltering_test = lib.__getattr__(self.name + settings.TEST_SUFFIX)
@@ -372,12 +313,12 @@ class BaseQuery:
             self.printer("Vivado is not supported on macOS.")
             return None
 
-        if test_settings.VIVADO_BIN_DIR == '':
+        if settings.VIVADO_BIN_DIR == '':
             pytest.fail("No Vivado install configured.")
 
-        vivado_env = {
-            'PATH': str(test_settings.VIVADO_BIN_DIR)
-        }
+        vivado_env = os.environ.copy()
+        vivado_env["PATH"] = str(settings.VIVADO_BIN_DIR) + os.pathsep + vivado_env["PATH"]
+        vivado_env["XILINX_VIVADO"] = str(settings.VIVADO_DIR)
 
         if not self.swallow_build_output:
             vivado_printer = self.printer
@@ -385,10 +326,10 @@ class BaseQuery:
             vivado_printer = lambda val: None
 
         result, sim_result = VivadoHLSProcessRunner(vivado_printer,
-                                                    [str(test_settings.VIVADO_HLS_EXEC), '-f',
-                                                     'run_complete_hls.tcl'],
+                                                    [str(settings.VIVADO_HLS_EXEC), '-f',
+                                                     str((self.working_dir / 'hls_build_ip_only.tcl').resolve())],
                                                     shell=False, cwd=self.working_dir,
-                                                    env={**os.environ, **vivado_env})
+                                                    env=vivado_env)
 
         if result != 0:
             pytest.fail("Failed to run Vivado. Exited with code {}.".format(result))
@@ -416,18 +357,18 @@ class BaseQuery:
 
         self.save_data()
 
-        if 'sql' in test_settings.TEST_PARTS:
+        if 'sql' in settings.TEST_PARTS:
             self.printer("Executing query on MySQL...")
             sql_data = self.run_sql()
         else:
             sql_data = None
         if (
-                platform.system() == 'Darwin' or platform.system() == 'Linux') and 'fletcherfiltering' in test_settings.TEST_PARTS:
+                platform.system() == 'Darwin' or platform.system() == 'Linux') and 'fletcherfiltering' in settings.TEST_PARTS:
             self.printer("Executing query on FletcherFiltering...")
             fletcher_data = self.run_fletcherfiltering()
         else:
             fletcher_data = None
-        if (platform.system() == 'Windows' or platform.system() == 'Linux') and 'vivado' in test_settings.TEST_PARTS:
+        if (platform.system() == 'Windows' or platform.system() == 'Linux') and 'vivado' in settings.TEST_PARTS:
             self.printer("Executing query on Vivado XSIM...")
             vivado_data = self.run_vivado()
         else:
@@ -502,19 +443,19 @@ class BaseQuery:
             if col.type == pa.float16():
                 reference[col.name] = self.clamp_float16(reference[col.name])
                 candidate[col.name] = self.clamp_float16(candidate[col.name])
-                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT16):
+                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=settings.REL_TOL_FLOAT16):
                     self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
-                                                                                                               test_settings.REL_TOL_FLOAT16))
+                                                                                                               settings.REL_TOL_FLOAT16))
                     errors += 1
             elif col.type == pa.float32():
-                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT32):
+                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=settings.REL_TOL_FLOAT32):
                     self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
-                                                                                                               test_settings.REL_TOL_FLOAT32))
+                                                                                                               settings.REL_TOL_FLOAT32))
                     errors += 1
             elif col.type == pa.float64():
-                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=test_settings.REL_TOL_FLOAT64):
+                if not math.isclose(reference[col.name], candidate[col.name], rel_tol=settings.REL_TOL_FLOAT64):
                     self.printer("Column {} has a larger difference than the configured tolerance: {}.".format(col.name,
-                                                                                                               test_settings.REL_TOL_FLOAT64))
+                                                                                                               settings.REL_TOL_FLOAT64))
                     errors += 1
             else:
                 if not reference[col.name] == candidate[col.name]:
@@ -528,11 +469,11 @@ class BaseQuery:
     def clamp_float16(value):
         if value is None:
             return value
-        if value > test_settings.FLOAT16_MAX:
+        if value > settings.FLOAT16_MAX:
             return float("inf")
-        elif value < -test_settings.FLOAT16_MAX:
+        elif value < -settings.FLOAT16_MAX:
             return float("-inf")
-        elif -test_settings.FLOAT16_MIN < value < test_settings.FLOAT16_MIN:
+        elif -settings.FLOAT16_MIN < value < settings.FLOAT16_MIN:
             return 0
 
         return value

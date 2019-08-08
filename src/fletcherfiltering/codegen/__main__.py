@@ -15,7 +15,7 @@
 #  This file is part of the FletcherFiltering project
 
 from .compiler import Compiler
-from .. import settings
+from fletcherfiltering import settings
 from pathlib import Path
 import os
 import os.path
@@ -33,7 +33,8 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output-schema', dest='output_schema', help='The output schema flatbuffer file.',
                         default='out_schema.fbs')
     parser.add_argument('query_str', help='The query string to be compiled.', metavar='query-string')
-    parser.add_argument('--query-name', help='The query name for both the file and the function.', default='query')
+    parser.add_argument('--query-name', help='The query name for both the file and the function.', default='query'),
+    parser.add_argument('--meta-length-source', help='Column that is used to generate the Metadata length in the kernel, think of it as the primary key.', default='pkid')
     parser.add_argument('--output-dir', help='The output directory.', default='.')
 
     args = parser.parse_args()
@@ -65,4 +66,4 @@ if __name__ == "__main__":
     if len(args.query_str) < settings.MINIMAL_QUERY_LENGTH:
         raise QueryTooShort()
 
-    compiler(query_str=args.query_str, query_name=args.query_name, output_dir=Path(args.output_dir))
+    compiler(query_str=args.query_str, query_name=args.query_name, output_dir=Path(args.output_dir), meta_length_source=args.meta_length_source)

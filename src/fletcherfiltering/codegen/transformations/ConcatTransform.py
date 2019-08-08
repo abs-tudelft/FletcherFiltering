@@ -18,7 +18,8 @@ import typed_ast.ast3 as ast
 from moz_sql_parser import ast_nodes
 import pyarrow as pa
 from .BaseTransform import BaseTransform
-from .. import debug,settings
+from fletcherfiltering import settings
+from fletcherfiltering.common import debug
 from ..exceptions import *
 
 
