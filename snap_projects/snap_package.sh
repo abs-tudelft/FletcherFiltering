@@ -50,7 +50,7 @@ package(){
     done    
     echo "Creating $1_pkg.tar.gz"
     tar -czvaf $1_pkg.tar.gz ${3}_pkg -C $PACKAGE_ROOT
-    rm -rf $PACKAGE_ROOT
+    #rm -rf $PACKAGE_ROOT
 }
 
 usage()

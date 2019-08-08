@@ -32,17 +32,13 @@ architecture Implementation of Fletcher{{ query_name }} is
 
   {% set global = namespace(reg_number=4) %}
   -- RecordBatch ranges:
-  {% for item in in_signals %}
-  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX : natural :=  {{ global.reg_number }};
-  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX : natural :=  {{ global.reg_number + 1 }};
-  {%- set global.reg_number = global.reg_number + 2 -%}
-  {% endfor -%}
+  constant REG_{{ settings.INPUT_NAME|upper }}_FIRSTIDX : natural :=  {{ global.reg_number }};
+  constant REG_{{ settings.INPUT_NAME|upper }}_LASTIDX : natural :=  {{ global.reg_number + 1 }};
+  {%- set global.reg_number = global.reg_number + 2 %}
 
-  {%- for item in out_signals %}
-  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX : natural :=  {{ global.reg_number }};
-  constant REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX : natural :=  {{ global.reg_number + 1 }};
-  {%- set global.reg_number = global.reg_number + 2 -%}
-  {% endfor %}
+  constant REG_{{ settings.OUTPUT_NAME|upper }}_FIRSTIDX : natural :=  {{ global.reg_number }};
+  constant REG_{{ settings.OUTPUT_NAME|upper }}_LASTIDX : natural :=  {{ global.reg_number + 1 }};
+  {%- set global.reg_number = global.reg_number + 2 %}
 
   -- Buffer addresses:
   {% for item in in_signals %}
@@ -221,7 +217,7 @@ begin
   {% endfor %}
   -- hook up rest of the kernel signals
   -- ap_ready, ap_done, ap_start are already hooked up in the state machine
-  meta_length_V <= std_logic_vector(unsigned(wreg_array(REG_{{ settings.INPUT_NAME|upper }}_{{ primary_key|upper }}_LASTIDX))-unsigned(wreg_array(REG_{{ settings.INPUT_NAME|upper }}_{{ primary_key|upper }}_FIRSTIDX)));
+  meta_length_V <= std_logic_vector(unsigned(wreg_array(REG_{{ settings.INPUT_NAME|upper }}_LASTIDX))-unsigned(wreg_array(REG_{{ settings.INPUT_NAME|upper }}_FIRSTIDX)));
 
   {% for item in in_signals %}
   {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_V_data <= {{ item.schema_name|lower }}_{{ item.stream_name|lower }};
@@ -264,12 +260,12 @@ begin
 
   -- Set the first and last index on our array
   {% for item in in_signals -%}
-  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_firstIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX);
-  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_lastIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_firstIdx <= wreg_array(REG_{{ item.schema_name|upper }}_FIRSTIDX);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_lastIdx <= wreg_array(REG_{{ item.schema_name|upper }}_LASTIDX);
   {% endfor %}
   {% for item in out_signals -%}
-  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_firstIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_FIRSTIDX);
-  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_lastIdx <= wreg_array(REG_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}_LASTIDX);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_firstIdx <= wreg_array(REG_{{ item.schema_name|upper }}_FIRSTIDX);
+  {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_lastIdx <= wreg_array(REG_{{ item.schema_name|upper }}_LASTIDX);
   {% endfor %}
 
   logic_p: process (
