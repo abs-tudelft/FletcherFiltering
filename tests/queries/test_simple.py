@@ -40,4 +40,4 @@ class Simple(BaseQuery):
         # Add the metadata to the schema
         self.out_schema = self.out_schema.add_metadata(metadata_out)
 
-        self.query = """select * FROM `{0}`""".format(self.name)
+        self.query = """select pkid FROM `{0}`""".format(self.name)

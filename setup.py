@@ -20,7 +20,7 @@ import importlib
 def find_version(
         package_name: str, version_module_name: str = 'settings',
         version_variable_name: str = '__version__') -> str:
-    """Simulate behaviour of "from package_name._version import VERSION", and return VERSION."""
+    """Simulate behaviour of "from package_name.settings import __version__", and return VERSION."""
     version_module = importlib.import_module(
         '{}.{}'.format(package_name.replace('-', '_'), version_module_name))
     return getattr(version_module, version_variable_name)

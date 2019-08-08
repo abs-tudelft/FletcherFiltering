@@ -22,10 +22,10 @@ class UIntGenerator:
         self.random = random.Random(seed)
         pass
 
-    def generate(self, size: int = 32):
+    def generate(self, size: int = 32, limit_to_signed: bool = False):
         # Because numpy datetime64 is signed.
-        if size == 64:
-            size = 63
+        if limit_to_signed:
+            size = size - 1
         return self.random.randint(0, 2 ** size - 1)
 
 
