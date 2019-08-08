@@ -118,7 +118,7 @@ def generate_random_data(schema: pa.Schema, schema_pk: str, size: int = settings
             elif col.type == pa.uint64():
                 data[col.name] = [uint_gen.generate(64) for i in range(size) ]
             elif pa.types.is_timestamp(col.type):
-                data[col.name] = [uint_gen.generate(64) for i in range(size) ]
+                data[col.name] = [uint_gen.generate(64, True) for i in range(size) ]
             elif col.type == pa.float16():
                 data[col.name] = [float_gen.generate(16) for i in range(size) ]
             elif col.type == pa.float32():
