@@ -19,17 +19,32 @@ import time
 import numpy as np
 from pathlib import Path
 from fletcherfiltering import settings
+from math import ceil,floor
 
-DATA_SIZE = 10000000
+DATA_SIZE = 1*1000*1000*1000
 
-name = 'Simple'
-#name = 'Float'
 
-schema = pa.schema([('pkid', pa.int32(), False)])
-# schema = pa.schema([('pkid', pa.int32(), False),
-#                     ('half1', pa.float16(), False),
-#                     ('float1', pa.float32(), False),
-#                     ('double1', pa.float64(), False)])
+#name = 'Simple'
+name = 'Float'
+
+#schema = pa.schema([('pkid', pa.int32(), False)])
+schema = pa.schema([('pkid', pa.int32(), False),
+                    ('half1', pa.float16(), False),
+                    ('float1', pa.float32(), False),
+                    ('double1', pa.float64(), False)])
+schema_size = 0
+schema_size_bits = 0
+for col in schema:
+    schema_size += ceil(col.type.bit_width/8)
+    schema_size_bits += col.type.bit_width
+
+print("One row in the schema takes {} bytes or {} bits ({} bytes).".format(schema_size, schema_size_bits, schema_size_bits/8))
+
+SIZE_PER_RECORD = schema_size
+
+DATA_COUNT = floor(DATA_SIZE/SIZE_PER_RECORD)
+
+print("Generating {} rows of size {} for a total size of {} ({})".format(DATA_COUNT, SIZE_PER_RECORD, DATA_COUNT*SIZE_PER_RECORD, DATA_SIZE))
 
 metadata_in = {b'fletcher_mode': b'read',
                b'fletcher_name': settings.INPUT_NAME.encode('ascii')}
@@ -40,7 +55,7 @@ schema_pk = 'pkid'
 
 start = time.time()
 
-data = generate_random_data(schema, schema_pk, DATA_SIZE)
+data = generate_random_data(schema, schema_pk, DATA_COUNT, columnar=True)
 
 
 
@@ -71,10 +86,10 @@ for col in schema:
     elif col.type == pa.uint64():
         type_func = np.uint64
     elif pa.types.is_timestamp(col.type):
-        type_func = (lambda x: np.datetime64(x, col.type.unit))
+        type_func = 'datetime64[{}]'.format(col.type.unit)
 
-    rb_data.append(
-        pa.array([(type_func(d[col.name]) if d[col.name] is not None else None) for d in data], col.type))
+    rb_data.append(pa.array(np.asarray(data[col.name], dtype=type_func), col.type))
+
 
 # Create a RecordBatch from the Arrays.
 recordbatch = pa.RecordBatch.from_arrays(rb_data, schema)
