@@ -107,6 +107,10 @@ int main(int argc, char **argv) {
   }
   t.stop();
   std::cout << "Dataset setup                    : " << t.seconds() << std::endl;
+  std::cout << "Input columns                    : " << input_batch->schema()->num_fields() << std::endl;
+  std::cout << "Output columns                   : " << output_batch->schema()->num_fields() << std::endl;
+
+  std::cout << "Output columns (from schema)     : " << schema->num_fields() << std::endl;
   std::cout << "Input dataset size               : " << input_size << std::endl;
   std::cout << "Output dataset size              : " << output_size << std::endl;
   t.start();
@@ -152,7 +156,7 @@ int main(int argc, char **argv) {
     return -1;
   }
   t.stop();
-  std::cout << "Record bacth queueing            : " << t.seconds() << std::endl;
+  std::cout << "Record batch queueing            : " << t.seconds() << std::endl;
   t.start();
 
   // "Enable" the context, potentially copying the recordbatch to the device. This depends on your platform.
