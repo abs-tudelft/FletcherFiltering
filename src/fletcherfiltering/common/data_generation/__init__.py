@@ -81,7 +81,7 @@ def generate_random_data_old(schema: pa.Schema, schema_pk: str, size: int = sett
     return data
 
 
-def generate_random_data(schema: pa.Schema, schema_pk: str, size: int = settings.DEFAULT_DATA_SIZE):
+def generate_random_data(schema: pa.Schema, schema_pk: str, size: int = settings.DEFAULT_DATA_SIZE, columnar: bool = False):
     if schema.get_field_index(schema_pk) < 0:
         raise ValueError("schema_pk must be the name of a column in the schema.")
     str_gen = SentenceGenerator()
@@ -132,6 +132,8 @@ def generate_random_data(schema: pa.Schema, schema_pk: str, size: int = settings
                 for i in indices:
                     data[col.name][i] = None
 
+    if columnar:
+        return data
     v = [dict(zip(data, t)) for t in zip(*data.values())]
     return v
 
