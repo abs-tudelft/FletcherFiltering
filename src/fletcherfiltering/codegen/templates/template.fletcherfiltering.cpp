@@ -45,10 +45,12 @@ void __sql_builtin_concat(f_uint8* buffer, int* offset, const f_uint8* value, f_
         buffer[j].data = value[i].data;
     }
     if(*offset>0){
-        buffer[*offset-1].last = false;
+        buffer[*offset].last = false;
     }
     *offset += length;
-    buffer[*offset-1].last = true;
+    if(*offset>=0){
+    	buffer[*offset].last = true;
+    }
 }
 
 void __sql_builtin_concat(f_uint8* buffer, int* offset, const char* value, f_base_length_type length, bool valid){
@@ -63,9 +65,11 @@ void __sql_builtin_concat(f_uint8* buffer, int* offset, const char* value, f_bas
         buffer[j].data = value[i];
     }
     if(*offset>0){
-        buffer[*offset-1].last = false;
+        buffer[*offset].last = false;
     }
     *offset += length;
-    buffer[*offset-1].last = true;
+    if(*offset>=0){
+    	buffer[*offset].last = true;
+    }
 }
 

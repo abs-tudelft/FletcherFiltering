@@ -225,7 +225,9 @@ class BaseQuery:
         compiler(query_str=self.query, query_name=self.name, output_dir=self.working_dir,
                  extra_include_dirs=settings.HLS_INCLUDE_PATH, hls_include_dirs=[settings.FLETCHER_DIR / settings.FLETCHER_HLS_DIR], extra_link_dirs=settings.HLS_LINK_PATH,
                  extra_link_libraries=settings.HLS_LIBS,
-                 run_vivado_hls=platform.system() != 'Darwin', run_fletchgen_in_docker=platform.system() != 'Linux')
+                 include_fletcher_wrapper=platform.system() == 'Linux',
+                 run_vivado_hls=platform.system() == 'Linux', run_fletchgen_in_docker=platform.system() != 'Linux',
+                 include_snap_project=platform.system() == 'Linux')
 
     def build_schema_class(self, schema: pa.Schema, suffix: str):
         schema_name = "Struct{}{}".format(self.name, suffix)
@@ -327,7 +329,7 @@ class BaseQuery:
 
         result, sim_result = VivadoHLSProcessRunner(vivado_printer,
                                                     [str(settings.VIVADO_HLS_EXEC), '-f',
-                                                     str((self.working_dir / 'hls_build_ip_only.tcl').resolve())],
+                                                     str((self.working_dir / 'hls_run_complete.tcl').resolve())],
                                                     shell=False, cwd=self.working_dir,
                                                     env=vivado_env)
 
