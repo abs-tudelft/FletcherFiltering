@@ -2,6 +2,6 @@
 
 #eval "$(conda shell.bash hook)"
 
-#conda activate FletcherFiltering
+conda activate FletcherFiltering
 
-PYTHONPATH="$PYTHONPATH:`pwd`/src:" python setup.py bdist_wheel
+PYTHONPATH="$PYTHONPATH:`pwd`/src:" python3 setup.py bdist_wheel
