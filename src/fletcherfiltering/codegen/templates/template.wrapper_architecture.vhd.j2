@@ -79,7 +79,9 @@ architecture Implementation of Fletcher{{ query_name }} is
 
   -- Global control state machine
   -- type state_type is (IDLE, START, BUSY, INTERFACE, UNLOCK);
-  type state_type is (RESET, WAITING, SETUP, RUNNING, DONE);
+  type state_type is (RESET, WAITING, {% for item in in_signals + out_signals -%}
+  SETUP_{{ item.schema_name|upper }}_{{ item.stream_name|upper }}{%- if not loop.last %}, {% endif -%}
+  {%- endfor %}, RUNNING, DONE);
 
   signal state, state_next : state_type;
 
@@ -340,35 +342,31 @@ begin
         stat_idle <= '1';
         -- Wait for start signal from UserCore (initiated by software)
         if ctrl_start = '1' then
-          state_next <= SETUP;
-        end if;
-
-      when SETUP =>
-        stat_done <= '0';
-        stat_busy <= '1';
-        stat_idle <= '0';
-        ap_start <= '1';
-
-        -- Send addresses and row indices to the ArrayReaders
-        {% for item in in_signals -%}
-        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '1';
-        {% endfor %}
-        -- Send addresses and row indices to the ArrayWriters
-        {% for item in out_signals -%}
-        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '1';
-        {% endfor %}
-
-        if {% for item in in_signals -%}
-        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready = '1' {% if not loop.last %}and {% endif %}
-        {%- endfor %}
-        and
-        {% for item in out_signals -%}
-        {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready = '1' {% if not loop.last %}and {% endif %}
-        {%- endfor -%}
-         then
-          -- ArrayReader and ArrayWriter have received the commands
+{% if (in_signals + out_signals) | first %}
+          state_next <= SETUP_{{ ((in_signals + out_signals) | first).schema_name|upper }}_{{ ((in_signals + out_signals) | first).stream_name|upper }};
+{% else %}
           state_next <= RUNNING;
+{% endif %}
         end if;
+
+{% for item in in_signals + out_signals %}
+      when SETUP_{{ item.schema_name|upper }}_{{ item.stream_name|upper }} =>
+          stat_done <= '0';
+          stat_busy <= '1';
+          stat_idle <= '0';
+
+          -- Send addresses and row indices to the ArrayReader/Writer
+
+          {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_valid <= '1';
+          if {{ item.schema_name|lower }}_{{ item.stream_name|lower }}_cmd_ready = '1' then
+            -- ArrayReader/Writer has received the command
+  {% if loop.nextitem %}
+            state_next <= SETUP_{{ loop.nextitem.schema_name|upper }}_{{ loop.nextitem.stream_name|upper }};
+  {% else %}
+            state_next <= RUNNING;
+  {% endif %}
+          end if;
+  {% endfor %}
 
       when RUNNING =>
         stat_done <= '0';
