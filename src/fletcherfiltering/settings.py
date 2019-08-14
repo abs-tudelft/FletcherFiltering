@@ -29,7 +29,7 @@ MINIMAL_QUERY_LENGTH = len('SELECT *')
 OVERWRITE_DATA = True
 
 VAR_LENGTH_TYPES = [pa.string()]
-VAR_LENGTH = 32
+VAR_LENGTH = 255
 PORT_TYPE = 'ap_fifo' # axis would be proper, but it has weird reserved named resulting in TID suffixes. And has longer latency.
 BLOCK_LEVEL_IO_TYPE = 'ap_ctrl_hs' # ap_ctrl_chained if backpressure is required.
 META_PORT_TYPE = 'register'
@@ -60,7 +60,7 @@ else:
 FLETCHER_HLS_DIR = Path('integrations/vivado_hls/src')
 
 # Test settings
-DEFAULT_DATA_SIZE = 10
+DEFAULT_DATA_SIZE = 2500
 
 WORKSPACE_NAME = 'fletcherfiltering_test_workspace'
 BUILD_CONFIG = 'Release'
