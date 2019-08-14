@@ -28,7 +28,7 @@ add_files -tb ${query_name}${data_suffix}.h -cflags "-std=c++11 ${hls_include_di
 add_files -tb ${query_name}${testbench_suffix}.cpp -cflags "-std=c++11 ${hls_include_dirs} -Wno-unknown-pragmas"
 open_solution "automated_tests"
 set_part {${part_name}}
-create_clock -period 10 -name default
+create_clock -period 4 -name default
 #config_export -format ip_catalog -rtl vhdl
 csim_design -O
 csynth_design
