@@ -49,7 +49,7 @@ package(){
         fi
     done    
     echo "Creating $1_pkg.tar.gz"
-    tar -czvaf $1_pkg.tar.gz ${3}_pkg -C $PACKAGE_ROOT
+    tar -chzvaf $1_pkg.tar.gz ${3} ${3}_pkg -C `pwd`
     #rm -rf $PACKAGE_ROOT
 }
 

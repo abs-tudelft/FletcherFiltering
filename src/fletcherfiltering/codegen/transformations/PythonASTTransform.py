@@ -168,7 +168,7 @@ class PythonASTTransform(BaseTransform):
                 else:
                     col_len_var_valid = col_len_var
 
-                col_load = ast.For(
+                col_load = [ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
                         func=ast.Name(
@@ -208,15 +208,46 @@ class PythonASTTransform(BaseTransform):
                         id='int',
                         ctx=ast.Load()
                     )
-                )
+                ),
+                    ast.If(
+                        test=ast.Compare(
+                            left=col_len_var,
+                            ops=[ast.Eq()],
+                            comparators=[
+                                ast.Num(0)
+                            ]
+                        ),
+                        body=[
+                            ast.Expr(ast.BinOp(
+                                left=ast.Attribute(
+                                    value=ast.Name(
+                                        id=settings.INPUT_NAME,
+                                        ctx=ast.Load()),
+                                    attr=col.name,
+                                    ctx=ast.Load()),
+                                op=ast.RShift(),
+                                right=ast.Subscript(
+                                    value=ast.Name(
+                                        id=col.name,
+                                        ctx=ast.Load()
+                                    ),
+                                    slice=ast.Index(ast.Num(0)),
+                                    ctx=ast.Store()
+                                ),
+                                type_comment=None)
+                            )
+                        ],
+                        orelse=[]
+                    )
+                ]
                 if col.nullable:
-                    col_load = ast.If(
+                    col_load = [ast.If(
                         test=col_len_var_valid,
                         body=col_load,
                         orelse=[]
-                    )
+                    )]
             else:
-                col_load = ast.Expr(ast.BinOp(
+                col_load = [ast.Expr(ast.BinOp(
                     left=ast.Attribute(
                         value=ast.Name(
                             id=settings.INPUT_NAME,
@@ -227,7 +258,7 @@ class PythonASTTransform(BaseTransform):
                     right=ast.Name(
                         id=col.name,
                         ctx=ast.Store()),
-                    type_comment=None))
+                    type_comment=None))]
             col_load_len = ast.Expr(ast.BinOp(
                 left=ast.Attribute(
                     value=ast.Name(
@@ -246,7 +277,7 @@ class PythonASTTransform(BaseTransform):
                 schema_ast.append(col_load_len)
 
             schema_ast.append(col_tmp_def)
-            schema_ast.append(col_load)
+            schema_ast.extend(col_load)
         return schema_ast
 
     def get_load_test_ast(self, schema: pa.Schema):
@@ -548,7 +579,7 @@ class PythonASTTransform(BaseTransform):
                 else:
                     col_len_var_valid = col_len_var
 
-                output_col_ast = ast.For(
+                output_col_ast = [ast.For(
                     target=ast.Name(id='i', ctx=ast.Store()),
                     iter=ast.Call(
                         func=ast.Name(
@@ -589,15 +620,47 @@ class PythonASTTransform(BaseTransform):
                         id='int',
                         ctx=ast.Load()
                     )
-                )
+                ),
+                    ast.If(
+                        test=ast.Compare(
+                            left=col_len_var,
+                            ops=[ast.Eq()],
+                            comparators=[
+                                ast.Num(0)
+                            ]
+                        ),
+                        body=[
+                            ast.Expr(ast.BinOp(
+                                left=ast.Attribute(
+                                    value=ast.Name(
+                                        id=settings.OUTPUT_NAME,
+                                        ctx=ast.Load()),
+                                    attr=col.name,
+                                    ctx=ast.Load()),
+                                op=ast.LShift(),
+                                right=ast.Call(
+                                    func=self.type_resolver.resolve(arrow_type=col.type, as_nullable=col.nullable),
+                                    args=[
+                                        ast.Num(0),
+                                        ast.NameConstant('False'),  # dvalid
+                                        ast.NameConstant('True'),  # last
+                                    ],
+                                    keywords=[]
+                                ),
+                                type_comment=None))
+                        ],
+                        orelse=[]
+                    )
+                ]
                 if col.nullable:
-                    output_col_ast = ast.If(
+                    output_col_ast[1].body[0].value.right.args.insert(0, ast.NameConstant('False'))
+                    output_col_ast = [ast.If(
                         test=col_len_var_valid,
                         body=output_col_ast,
                         orelse=[col_empty_element]
-                    )
+                    )]
             else:
-                output_col_ast = ast.Expr(ast.BinOp(
+                output_col_ast = [ast.Expr(ast.BinOp(
                     left=
                     ast.Attribute(
                         value=ast.Name(
@@ -610,7 +673,7 @@ class PythonASTTransform(BaseTransform):
                         id=col_name_code,
                         ctx=ast.Load()
                     ),
-                    type_comment=None))
+                    type_comment=None))]
 
             output_col_ast_len = ast.Expr(ast.BinOp(
                 left=
@@ -630,7 +693,7 @@ class PythonASTTransform(BaseTransform):
             if col.type in settings.VAR_LENGTH_TYPES:
                 schema_ast.append(output_col_ast_len)
 
-            schema_ast.append(output_col_ast)
+            schema_ast.extend(output_col_ast)
         return schema_ast
 
     def get_store_test_ast(self, schema: pa.Schema):
@@ -770,7 +833,50 @@ class PythonASTTransform(BaseTransform):
                         id='int',
                         ctx=ast.Load()
                     )
-                )]
+                ),
+                    ast.If(
+                        test=ast.Compare(
+                            left=col_len_var,
+                            ops=[ast.Eq()],
+                            comparators=[
+                                ast.Num(0)
+                            ]
+                        ),
+                        body=[
+                            ast.Expr(ast.BinOp(
+                                left=
+                                ast.Attribute(
+                                    value=ast.Name(
+                                        id=settings.OUTPUT_NAME,
+                                        ctx=ast.Load()),
+                                    attr=col.name,
+                                    ctx=ast.Store()),
+                                op=ast.RShift(),
+                                right=ast.Name(
+                                    id=col_name_code,
+                                    ctx=ast.Load()
+                                ),
+                                type_comment=None)),
+                            ast.Assign(
+                                targets=[
+                                    ast.Subscript(
+                                        value=col_var_value,
+                                        slice=ast.Index(ast.Num(0)),
+                                        ctx=ast.Load()
+                                    )
+                                ],
+                                value=
+                                ast.Attribute(
+                                    value=ast.Name(
+                                        id=col_name_code,
+                                        ctx=ast.Load()),
+                                    attr='data',
+                                    ctx=ast.Store()),
+                            )
+                        ],
+                        orelse=[]
+                    )
+                ]
 
                 output_col_null_term = ast.Assign(
                     targets=[

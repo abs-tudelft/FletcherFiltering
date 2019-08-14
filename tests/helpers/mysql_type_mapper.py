@@ -76,7 +76,7 @@ class MySQLTypeMapper(object):
         return "BIGINT UNSIGNED"
 
     def type_string(self, arrow_type):
-        return "VARCHAR({})".format(settings.VAR_LENGTH)
+        return "TEXT" if settings.VAR_LENGTH >= 4096 else "VARCHAR({})".format(settings.VAR_LENGTH)
 
     # TODO: Maybe replace with the correct decimal column
     def type_halffloat(self, arrow_type):

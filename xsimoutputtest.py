@@ -18,6 +18,7 @@ from tests.helpers.xsim_output_reader import XSIMOutputReader
 from tests.queries.test_nullable import Nullable
 from tests.queries.test_combination1 import Combination1
 from tests.queries.test_concat import Concat
+from tests.queries.test_wildcard import Wildcard
 from fletcherfiltering import settings
 import pyarrow as pa
 from pathlib import Path
@@ -111,6 +112,7 @@ def run_test(q):
     print(table.table)
 
 if __name__ == '__main__':
+    run_test(Wildcard(None, None))
     run_test(Combination1(None, None))
     run_test(Concat(None, None))
     run_test(Nullable(None, None))

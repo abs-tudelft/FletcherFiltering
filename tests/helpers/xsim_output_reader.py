@@ -205,9 +205,9 @@ class XSIMOutputReader():
                         if full_output:
                             transactions[current_transaction].append(unpacked)
                         else:
-                            transactions[current_transaction] += unpacked['data']
+                            transactions[current_transaction] += unpacked['data'] if unpacked['dvalid'] else b''
                     else:
-                        transactions[current_transaction] = unpacked['data'] if not full_output else unpacked
+                        transactions[current_transaction] = (unpacked['data'] if unpacked['dvalid'] else b'') if not full_output else unpacked
                 else:
                     transactions[current_transaction] = None if not full_output else unpacked
 
