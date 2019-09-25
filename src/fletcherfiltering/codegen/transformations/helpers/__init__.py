@@ -75,7 +75,7 @@ def iter_fields(node):
             pass
 
 def make_comment(comment, eol=False):
-    comment = horast.Comment(value=ast.Str(comment), eol=eol, lineno=0, col_offset=0)
+    comment = horast.Comment(comment=comment, eol=eol, lineno=0, col_offset=0)
     return comment
 
 def grouped(iterable, n):
