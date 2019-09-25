@@ -1,7 +1,26 @@
 # FletcherFiltering
 SQL to HLS compiler that generates hardware filters and transformations for [Flechter](https://github.com/abs-tudelft/fletcher) streams.
 
+## Installation (for testing)
+Note this project only runs on python 3.
+The test suite requires Vivado 2019.1 for now (see [settings.py](src/fletcherfiltering/settings.py)). When using with the SNAP framework only 2018.1 is supported. By default it looks for Vivado in the default install locations. (`/opt/Xilinx/Vivado` on Linux and `C:/Xilinx/Vivado` on Windows)
+```
+git clone --recurse-submodules https://github.com/abs-tudelft/fletcher
+git clone https://github.com/abs-tudelft/FletcherFiltering
+source fletcher/env.sh
+cd FletcherFiltering
+pip install -r requirements.txt -r requirements-test.txt
+docker-compose up # Start the Percona SQL Server
+./run-pytest.sh # Run all tests.
+```
 
+## Usage from command line
+```
+python3 -m fletcherfiltering.codegen -i in.fbs -o out.fbs --output-dir Wildcard-test --query-name Wildcard "select * FROM Wildcard"
+```
+`in.fbs` is the input arrow schema and `out.fbs` is the output arrow schema. These are flatbuffer files.
+
+## Usage from python
 If you want to use the compiler from python, you can call the compile function directly. Here is an excerpt from [\_\_main\_\_.py](src/fletcherfiltering/codegen/__main__.py#L42-L69):
 ```py
 if os.path.isfile(args.input_schema):
