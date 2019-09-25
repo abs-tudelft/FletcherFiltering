@@ -41,4 +41,4 @@ header_ast, general_ast, header_test_ast, general_test_ast = self.transform(quer
 self.output(header_ast, general_ast, header_test_ast, general_test_ast, output_dir, current_query_name,
             include_test_system=include_test_system)
 ```
-Where `query` is the input `AST`. And self is the `Compiler` object as instantiated in the code above.
+Where `query` is the input `AST`. And `self` is the `Compiler` object as instantiated in the code above.
